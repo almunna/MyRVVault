@@ -3,7 +3,11 @@
     "allow": [
       "Bash(python:*)",
       "Bash(npx image-size:*)",
-      "Bash(identify:*)"
+      "Bash(identify:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(git push:*)"
     ]
   }
 }
