@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+    background-color: #F5F5F0;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out both;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.6s ease-out both;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.5s ease-out both;
+}
+
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-500 { animation-delay: 0.5s; }
+
+/* Hover lift effect for cards */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+/* Smooth button transitions */
+.btn-animate {
+  transition: all 0.3s ease;
+}
+.btn-animate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 125, 60, 0.3);
+}
+
+/* Accent button variant */
+.btn-accent {
+  transition: all 0.3s ease;
+}
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 135, 45, 0.35);
+}
+.btn-animate:active {
+  transform: translateY(0);
+}
+
+/* Watermark float animation */
+@keyframes floatWatermark {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.01);
+  }
+}
+
+.animate-float {
+  animation: floatWatermark 6s ease-in-out infinite;
+}
+
+/* Navbar link underline animation */
+.nav-link-hover {
+  position: relative;
+}
+.nav-link-hover::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #3B7D3C;
+  transition: width 0.3s ease;
+}
+.nav-link-hover:hover::after {
+  width: 100%;
+}
+
+/* ===== Ant Design Overrides - FAQ Collapse ===== */
+.ant-collapse-ghost > .ant-collapse-item {
+    border: none !important;
+    border-bottom: 1px solid #E8E8E8 !important;
+    padding: 4px 16px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.ant-collapse-ghost > .ant-collapse-item:last-child {
+    border-bottom: none !important;
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-header-text {
+    margin-inline-end: auto;
+    font-weight: 500;
+    font-size: 16px;
+    color: #1A1A1A;
+}
+
+/* ===== Ant Design Overrides - Select ===== */
+:where(.css-dev-only-do-not-override-1ay42y).ant-select-outlined:not(.ant-select-customize-input) .ant-select-selector {
+    border: 1px solid #3B7D3C;
+    background: transparent;
+}
+
+:where(.css-dev-only-do-not-override-1sawdwi).ant-select-outlined:not(.ant-select-customize-input) .ant-select-selector {
+    border: 1px solid #3B7D3C;
+    background: rgba(255, 0, 0, 0);
+}
+
+/* select field */
+
+/* Target the Select input area */
+.custom-select .ant-select-selector {
+  background-color: #00000000 !important;
+  border-color: #3B7D3C !important;
+  color: #3B7D3C !important;
+}
+
+/* Target the dropdown menu */
+.custom-select .ant-select-dropdown {
+  background-color: #ffffff00 !important;
+}
+
+/* Target dropdown menu items */
+.custom-select .ant-select-item-option {
+  color: #3B7D3C !important;
+}
+
+/* Target selected item in dropdown */
+.custom-select .ant-select-item-option-selected {
+  background-color: #E8F0E8 !important;
+}

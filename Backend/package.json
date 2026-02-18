@@ -1,0 +1,38 @@
+{
+  "name": "trikky12",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Ishtiaque",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.893.0",
+    "@sendgrid/mail": "^8.1.5",
+    "apple-signin-auth": "^2.0.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "firebase-admin": "^13.3.0",
+    "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
+    "http-status": "^2.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.2",
+    "multer-s3": "^3.0.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.3",
+    "twilio": "^5.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

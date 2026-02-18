@@ -1,0 +1,75 @@
+name: Deploye Server To AWS
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: set-up node js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.15'
+      - name: install Dependencies
+        run: 'npm i -f'
+      - name: Install TypeScript Compiler
+        run: npm install -g typescript
+      - name: Build Project
+        run: npm run build
+
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: set-up node js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.15'
+      - name: install Dependencies
+        run: 'npm i -f'
+      - name: Install TypeScript Compiler
+        run: npm install -g typescript
+      - name: Build Project
+        run: npm run build
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+      - name: Deploy website to EC2
+        env:
+          EC2_HOST: ${{ secrets.SERVER_HOST }}
+          EC2_USER: ${{ secrets.SERVER_USER }}
+          ENV_VARS_JSON: ${{ secrets.ENV_VARS_JSON }}
+        run: |
+          # Create application directories on EC2 if they don't exist
+          ssh $EC2_USER@$EC2_HOST "mkdir -p ~/applications/website"
+
+          # Copy the backend project to EC2 using `rsync`
+          rsync -avz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.github' \
+            . $EC2_USER@$EC2_HOST:~/applications/website/
+
+          # Install production dependencies on EC2 for the backend
+          ssh $EC2_USER@$EC2_HOST "cd ~/applications/website && npm install -f"
+
+          # Set the environment variables (using the ENV_VARS_JSON secret)
+          ssh $EC2_USER@$EC2_HOST "echo '$ENV_VARS_JSON' > ~/applications/website/.env"
+
+          # Install PM2 if needed and stop the existing PM2 process if it exists
+          ssh $EC2_USER@$EC2_HOST "bash -lc 'source ~/.nvm/nvm.sh >/dev/null 2>&1 || true; npm i -g pm2 >/dev/null 2>&1 || true; pm2 delete website || true'"
+
+          # Start the website application with PM2 and persist the process list
+          ssh $EC2_USER@$EC2_HOST "bash -lc 'source ~/.nvm/nvm.sh >/dev/null 2>&1 || true; cd ~/applications/website && pm2 start index.js --name website --update-env && pm2 save'"

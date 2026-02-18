@@ -1,0 +1,20 @@
+[
+  { "id": "ac", "title": "Air Conditioner Information", "logo": "logo1" },
+  { "id": "heater", "title": "Heater Information", "logo": "logo1" },
+  { "id": "pump", "title": "Water Pump Information", "logo": "logo1" },
+  { "id": "washer", "title": "Washer Information", "logo": "logo1" },
+  { "id": "heater-water", "title": "Water Heater Information", "logo": "logo1" },
+  { "id": "toilet", "title": "Toilet Information", "logo": "logo1" },
+  { "id": "tv", "title": "TV Information", "logo": "logo1" },
+  { "id": "dryer", "title": "Dryer Information", "logo": "logo1" },
+  { "id": "exhaust", "title": "Exhaust Fans Information", "logo": "logo1" },
+  { "id": "vent", "title": "Vent Fans Information", "logo": "logo2" },
+  { "id": "dishwasher", "title": "Dishwasher Information", "logo": "logo1" },
+  { "id": "ceiling", "title": "Celling Fans Information", "logo": "logo1" },
+  { "id": "dvd", "title": "DVD Information", "logo": "logo1" },
+  { "id": "gps", "title": "GPS Information", "logo": "logo2" },
+  { "id": "radio", "title": "Outdoor Radio Information", "logo": "logo1" },
+  { "id": "sound", "title": "Surround Sound Information", "logo": "logo1" },
+  { "id": "internet", "title": "Internet/Satellite Information", "logo": "logo1" },
+  { "id": "router", "title": "Router Information", "logo": "logo1" }
+]
