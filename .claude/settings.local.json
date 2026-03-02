@@ -14,7 +14,8 @@
       "Bash(git -C \"f:/My RV Vault\" log --oneline -10)",
       "Bash(git -C \"f:/My RV Vault\" remote -v)",
       "Bash(git -C \"f:/My RV Vault\" status --short)",
-      "Bash(xargs grep -l \"imageUrl\")"
+      "Bash(xargs grep -l \"imageUrl\")",
+      "Bash(ls -la .env*)"
     ]
   }
 }
