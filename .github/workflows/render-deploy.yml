@@ -42,9 +42,7 @@ jobs:
       - name: Build production bundle
         run: npm run build
         env:
-          VITE_API_URL: https://my-rv-vault-backend.onrender.com/api
-          VITE_GOOGLE_MAP_KEY: ${{ secrets.VITE_GOOGLE_MAP_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_API_URL: https://myrvvault-backend.onrender.com/api
 
   deploy:
     name: Deploy to Render

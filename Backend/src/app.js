@@ -29,17 +29,16 @@ dotenv.config();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const allowedOrigins = [
-  process.env.FRONTEND_URL,      // Render frontend URL
+  "https://myrvvault.onrender.com",  // Render frontend (hardcoded for reliability)
+  process.env.FRONTEND_URL,          // custom domain override
   "http://10.10.20.60:3002",
   "http://localhost:5173",
   "http://localhost:3002",
   "http://51.20.217.10:5000",
   "http://51.20.217.10:3000",
   "http://51.20.217.10:3001",
-  'http://51.20.217.10:3001',
   "http://localhost:3000",
   "http://10.10.20.52:3000",
-  "*"
 ].filter(Boolean);
 
 
