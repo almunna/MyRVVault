@@ -1,13 +1,29 @@
-const mongoose = require('mongoose');
+const admin = require('firebase-admin');
 
-const connectDB = async () => {
+let serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
-    await mongoose.connect(process.env.MONGO_URI,{dbName:"rv-maintainance"});
-    console.log('✅ MongoDB connected');
+    serviceAccount = JSON.parse(
+      Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf8')
+    );
   } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
+    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env var:', err.message);
     process.exit(1);
   }
-};
+} else {
+  serviceAccount = require('../../my-rv-vault-26-firebase-adminsdk-fbsvc-9baea55f56.json');
+}
 
-module.exports = connectDB;
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+
+const db = admin.firestore();
+const FieldValue = admin.firestore.FieldValue;
+const Timestamp = admin.firestore.Timestamp;
+
+console.log('✅ Firebase Firestore connected');
+
+module.exports = { db, FieldValue, Timestamp };

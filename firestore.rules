@@ -1,0 +1,108 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users — only the owner can read/write their own document
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Admins — only server (Admin SDK) has access; deny all client access
+    match /admins/{adminId} {
+      allow read, write: if false;
+    }
+
+    // TempUsers — only server (Admin SDK) has access
+    match /tempUsers/{docId} {
+      allow read, write: if false;
+    }
+
+    // RVs — owner only
+    match /rvs/{rvId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Chassis — owner only
+    match /chassis/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Appliances — owner only (covers tires, heaters, airConditioners, waterPumps,
+    // washers, waterHeaters, toilets, dryers, tvs, exhaustFans, ventFans,
+    // dishwashers, cellingFans, dvds, gpsSystems, internetSatellite, wifiRouters,
+    // outdoorRadios, surroundSounds, memberships, insurance, newRepairs, expenses)
+    match /tires/{docId}              { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /heaters/{docId}            { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /airConditioners/{docId}    { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /waterPumps/{docId}         { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /washers/{docId}            { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /waterHeaters/{docId}       { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /toilets/{docId}            { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /dryers/{docId}             { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /tvs/{docId}                { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /exhaustFans/{docId}        { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /ventFans/{docId}           { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /dishwashers/{docId}        { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /cellingFans/{docId}        { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /dvds/{docId}               { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /gpsSystems/{docId}         { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /internetSatellite/{docId}  { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /wifiRouters/{docId}        { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /outdoorRadios/{docId}      { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /surroundSounds/{docId}     { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /memberships/{docId}        { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /insurance/{docId}          { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /newRepairs/{docId}         { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+    match /expenses/{docId}           { allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid; allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid; }
+
+    // Reports — owner only
+    match /reports/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Checklists — owner only
+    match /checklists/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Maintenance Schedules — owner only
+    match /maintenanceSchedules/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Trips — owner only
+    match /trips/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // Sell RVs — owner only
+    match /sellRvs/{docId} {
+      allow read, write: if isAuthenticated() && resource.data.user == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user == request.auth.uid;
+    }
+
+    // CMS content — public read, server-only write
+    match /privacyPolicies/{docId}  { allow read: if true; allow write: if false; }
+    match /termsConditions/{docId}  { allow read: if true; allow write: if false; }
+    match /aboutUs/{docId}          { allow read: if true; allow write: if false; }
+    match /faqs/{docId}             { allow read: if true; allow write: if false; }
+    match /contactUs/{docId}        { allow read: if true; allow write: if false; }
+
+  }
+}

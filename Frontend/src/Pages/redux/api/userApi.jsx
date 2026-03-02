@@ -121,6 +121,14 @@ const useApi = baseApi.injectEndpoints({
         };
       },
     }),
+    googleLogin: builder.mutation({
+      query: (data) => ({
+        url: "/auth/google-login",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["updateProfile"],
+    }),
     getHostUser: builder.query({
       query: ({ user, page, search }) => {
         return {
@@ -145,5 +153,6 @@ export const {
   useChangePasswordMutation,
   useGetHostUserQuery,
   useVerifyEmailMutation,
-  useReSendMutation
+  useReSendMutation,
+  useGoogleLoginMutation,
 } = useApi;

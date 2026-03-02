@@ -1,38 +1,22 @@
-const fs = require("fs");
-const path = require("path");
+const { db } = require('../config/db');
+const deleteS3Objects = require('./deleteS3ObjectsImage');
 
 /**
- * Delete a document and its associated files
- * @param {mongoose.Model} Model - The Mongoose model (e.g., WaterPump, Tire, Book)
- * @param {String} id - The document ID
- * @param {String} baseUploadPath - Base folder for uploads (e.g., "uploads")
+ * Delete a Firestore document and its associated S3 images
+ * @param {string} collectionName - Firestore collection name
+ * @param {string} id - Document ID
  */
-const deleteDocumentWithFiles = async (Model, id, baseUploadPath) => {
-  const doc = await Model.findById(id);
-  if (!doc) return null;
+const deleteDocumentWithFiles = async (collectionName, id) => {
+  const doc = await db.collection(collectionName).doc(id).get();
+  if (!doc.exists) return null;
+  const data = { id: doc.id, ...doc.data() };
 
-  if (doc.images && doc.images.length > 0) {
-    for (const filePath of doc.images) {
-      // If DB stores "images/xyz.png", build full path under baseUploadPath
-      const fullPath = path.resolve(baseUploadPath, filePath);
-
-      console.log(`🔎 Trying to delete: ${fullPath}`);
-
-      try {
-        fs.unlinkSync(fullPath);
-        console.log(`✅ Deleted: ${fullPath}`);
-      } catch (err) {
-        if (err.code === "ENOENT") {
-          console.warn(`⚠️ File not found: ${fullPath}`);
-        } else {
-          console.error(`❌ Error deleting ${fullPath}:`, err);
-        }
-      }
-    }
+  if (data.images && data.images.length > 0) {
+    await deleteS3Objects(data.images);
   }
 
-  await doc.deleteOne();
-  return doc;
+  await db.collection(collectionName).doc(id).delete();
+  return data;
 };
 
 module.exports = deleteDocumentWithFiles;

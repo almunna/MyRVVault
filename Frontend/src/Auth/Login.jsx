@@ -4,16 +4,43 @@ import { useEffect, useState } from "react";
 
 import Logo from "../assets/Home/hero.png";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaArrowLeft } from "react-icons/fa";
-import { useLoginUserMutation } from "../Pages/redux/api/userApi";
+// import { FaApple } from "react-icons/fa"; // Apple login — disabled
+import { FaArrowLeft } from "react-icons/fa";
+import { useLoginUserMutation, useGoogleLoginMutation } from "../Pages/redux/api/userApi";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
   const [form] = Form.useForm();
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [loginAdmin] = useLoginUserMutation();
+  const [googleLoginMutation] = useGoogleLoginMutation();
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      try {
+        const payload = await googleLoginMutation({ accessToken: tokenResponse.access_token }).unwrap();
+        if (payload?.accessToken) {
+          localStorage.setItem("accessToken", payload.accessToken);
+          message.success(payload?.message || "Google login successful!");
+          const rvArray = payload?.user?.rv || [];
+          navigate(rvArray.length === 0 ? "/addRv" : "/");
+        } else {
+          message.error(payload?.message || "Google login failed!");
+        }
+      } catch (error) {
+        message.error(error?.data?.message || "Google login failed!");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: () => message.error("Google login was cancelled or failed."),
+    flow: "implicit",
+  });
 
   // ✅ Load saved email/password if remember is enabled
   useEffect(() => {
@@ -183,15 +210,22 @@ const Login = () => {
                 ----Or Login with----
               </h1>
 
-              <div className="grid grid-cols-2 gap-3 mt-5">
-                <button className="border flex gap-2 justify-center border-[#E8F0E8] bg-white w-full py-2 rounded-lg text-xl text-[#1A1A1A] btn-animate hover:border-[#3B7D3C]">
+              <div className="flex gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading}
+                  className={`border flex gap-2 justify-center border-[#E8F0E8] bg-white w-full py-2 rounded-lg text-xl text-[#1A1A1A] btn-animate hover:border-[#3B7D3C] ${googleLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
                   <FcGoogle className="mt-1" />
-                  Google
+                  {googleLoading ? "Signing in..." : "Google"}
                 </button>
+                {/* Apple login — disabled
                 <button className="border border-[#E8F0E8] bg-white w-full flex gap-1 justify-center py-2 rounded-lg text-xl text-[#1A1A1A] btn-animate hover:border-[#3B7D3C]">
                   <FaApple className="mt-1" />
                   Apple
                 </button>
+                */}
               </div>
             </div>
 

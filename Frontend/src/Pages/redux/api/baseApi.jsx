@@ -1,8 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: 'http://localhost:5002/api',
-    // http://159.65.217.35:8001
+    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5002/api',
     prepareHeaders: (headers) => {
         const token = (localStorage.getItem('accessToken'));
         if (token) {
@@ -20,4 +19,4 @@ export const baseApi = createApi({
 });
 
 
-export const imageUrl = 'http://localhost:5002'
+export const imageUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5002/api').replace('/api', '')

@@ -2,11 +2,12 @@ const express = require('express');
 
 const router = express.Router();
 
-const { signup, verifyEmail, login, adminLogin, resendVerificationCode, forgotPassword, resetPassword, verifyCode, resendPasswordResetCode, adminForgotPassword, adminVerifyCode, adminResetPassword, socialLogin } = require('./auth.controller');
+const { signup, verifyEmail, login, adminLogin, resendVerificationCode, forgotPassword, resetPassword, verifyCode, resendPasswordResetCode, adminForgotPassword, adminVerifyCode, adminResetPassword, googleLogin } = require('./auth.controller');
 
 
 router.post('/register', signup);
 router.post('/verify-email', verifyEmail);
+router.post('/activate-account', verifyEmail); // alias used by frontend registerActivation
 router.post('/login', login);
 router.post('/resend-verification-code', resendVerificationCode);
 router.post('/forgot-password', forgotPassword);
@@ -17,7 +18,8 @@ router.post('/admin-login', adminLogin);
 router.post('/admin-forgot-password', adminForgotPassword);
 router.post('/admin-verify-code', adminVerifyCode);
 router.post('/admin-reset-password', adminResetPassword);
-router.post('/social-login', socialLogin);
+router.post('/google-login', googleLogin);
+// router.post('/apple-login', appleLogin); // Apple login — disabled
 
 
 module.exports = router;

@@ -1,222 +1,154 @@
-const MaintenanceSchedule = require('./MaintenanceSchedule');
+const { db, FieldValue } = require('../../../config/db');
 const asyncHandler = require('../../../utils/asyncHandler');
-const {ApiError } = require('../../../errors/errorHandler');
+const { ApiError } = require('../../../errors/errorHandler');
+const { docToObj, queryToArr } = require('../../../utils/firestoreHelper');
 const getSelectedRvByUserId = require('../../../utils/currentRv');
 const { updateRVMaintenanceStatus: updateRVMaintenanceStatusUtil, calculateMaintenanceStatus } = require('../../../utils/maintenanceUtils');
-const RV = require('../RV/RV');
-const User = require('../User/User');
 const QueryBuilder = require('../../../builder/queryBuilder');
+
+const col = () => db.collection('maintenanceSchedules');
+const rvCol = () => db.collection('rvs');
+const userCol = () => db.collection('users');
+
+async function checkRvOwnership(userId, rvId) {
+    const userSnap = await userCol().doc(userId).get();
+    if (!userSnap.exists) return false;
+    const user = userSnap.data();
+    return Array.isArray(user.rvIds) && user.rvIds.includes(rvId);
+}
+
 
 exports.createMaintenanceSchedule = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const selectedRvId = await getSelectedRvByUserId(userId);
-    
+
     let rvId = req.body?.rvId;
-    if (!rvId && !selectedRvId) {
-        throw new ApiError('No RV selected. Please select an RV first.', 400);
-    }
+    if (!rvId && !selectedRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
     if (!rvId) rvId = selectedRvId;
 
     const hasAccess = await checkRvOwnership(userId, rvId);
-    if (!hasAccess) {
-        throw new ApiError('You do not have permission to add maintenance for this RV', 403);
-    }
+    if (!hasAccess) throw new ApiError('You do not have permission to add maintenance for this RV', 403);
 
-    const maintenanceSchedule = await MaintenanceSchedule.create({
+    const data = {
         ...req.body,
         user: userId,
-        rvId
-    });
+        rvId,
+        isCompleted: false,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
+    const ref = await col().add(data);
+    const snap = await ref.get();
+    const maintenanceSchedule = docToObj(snap);
 
-    if (!maintenanceSchedule) {
-        throw new ApiError('Failed to create maintenance schedule', 500);
-    }
+    if (!maintenanceSchedule) throw new ApiError('Failed to create maintenance schedule', 500);
 
-    // Update RV maintenance status after creating schedule
     await updateRVMaintenanceStatusUtil(rvId);
 
-    res.status(201).json({
-        success: true,
-        message: 'Maintenance schedule created successfully',
-        data: maintenanceSchedule
-    });
+    res.status(201).json({ success: true, message: 'Maintenance schedule created successfully', data: maintenanceSchedule });
 });
 
 
 exports.getMaintenanceSchedule = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const selectedRvId = await getSelectedRvByUserId(userId);
-    
+
     let rvId = req.query.rvId;
-    if (!rvId && !selectedRvId) {
-        throw new ApiError('No RV selected. Please select an RV first.', 400);
-    }
+    if (!rvId && !selectedRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
     if (!rvId) rvId = selectedRvId;
 
     const hasAccess = await checkRvOwnership(userId, rvId);
-    if (!hasAccess) {
-        throw new ApiError('You do not have permission to view maintenance for this RV', 403);
-    }
-    
-    // Update RV maintenance status when accessing maintenance schedules
+    if (!hasAccess) throw new ApiError('You do not have permission to view maintenance for this RV', 403);
+
     const rvStatus = await updateRVMaintenanceStatusUtil(rvId);
-    
-    const rv = await RV.findById(rvId).select('currentMileage');
-    const currentMileage = rv?.currentMileage || 0;
-    
-    req.query.rvId = rvId;
-    
-    const baseQuery = { user: userId, rvId };
-    
-    const maintenanceQuery = new QueryBuilder(
-        MaintenanceSchedule.find(baseQuery),
-        req.query
-    );
-    
-    const maintenanceSchedules = await maintenanceQuery
+
+    const rvSnap = await rvCol().doc(rvId).get();
+    const currentMileage = rvSnap.exists ? (rvSnap.data().currentMileage || 0) : 0;
+
+    const colRef = col().where('user', '==', userId).where('rvId', '==', rvId);
+    const result = await new QueryBuilder(colRef, req.query)
         .search(['component', 'maintenanceToBePerformed', 'notes'])
         .filter()
         .sort()
         .paginate()
-        .fields()
-        .modelQuery;
-    
-    const total = await new QueryBuilder(
-        MaintenanceSchedule.find(baseQuery),
-        req.query
-    ).countTotal();
-    
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const totalPages = Math.ceil(total / limit);
+        .execute();
 
-    const meta = {
-        page,
-        limit,
-        total,
-        totalPages
-    };
-
-    if (!maintenanceSchedules || maintenanceSchedules.length === 0) {
+    if (!result.data.length) {
         return res.status(200).json({
             success: true,
             message: 'No maintenance schedules found',
             data: [],
-            meta,
-            rvMaintenanceStatus: rvStatus // Include RV status
+            meta: result.meta,
+            rvMaintenanceStatus: rvStatus
         });
     }
 
-    const schedulesWithStatus = maintenanceSchedules.map(schedule => {
+    const schedulesWithStatus = result.data.map(schedule => {
         const statusInfo = calculateMaintenanceStatus(schedule, currentMileage);
-        return {
-            ...schedule.toObject(),
-            status: statusInfo.status,
-            isOverdue: statusInfo.isOverdue,
-            nextMaintenanceDate: statusInfo.nextMaintenanceDate,
-            nextMaintenanceMileage: statusInfo.nextMaintenanceMileage,
-            daysUntilDue: statusInfo.daysUntilDue,
-            mileageUntilDue: statusInfo.mileageUntilDue
-        };
+        return { ...schedule, ...statusInfo };
     });
 
     res.status(200).json({
         success: true,
         message: 'Maintenance schedules retrieved successfully',
         data: schedulesWithStatus,
-        meta,
-        rvMaintenanceStatus: rvStatus // Include RV status
+        meta: result.meta,
+        rvMaintenanceStatus: rvStatus
     });
 });
 
-// @desc    Get single maintenance schedule by ID
-// @route   GET /api/v1/maintenance-schedule/:id
-// @access  Private
+
 exports.getMaintenanceScheduleById = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    
-    const maintenanceSchedule = await MaintenanceSchedule.findOne({
-        _id: req.params.id,
-        user: userId
-    });
 
-    if (!maintenanceSchedule) {
-        throw new ApiError('Maintenance schedule not found or access denied', 404);
-    }
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) throw new ApiError('Maintenance schedule not found or access denied', 404);
 
-    // Update RV maintenance status for this schedule's RV
+    const maintenanceSchedule = docToObj(snap);
+    if (maintenanceSchedule.user !== userId) throw new ApiError('Maintenance schedule not found or access denied', 404);
+
     await updateRVMaintenanceStatusUtil(maintenanceSchedule.rvId);
 
-    // Get current mileage from RV for status calculation
-    const rv = await RV.findById(maintenanceSchedule.rvId).select('currentMileage');
-    const currentMileage = rv?.currentMileage || 0;
+    const rvSnap = await rvCol().doc(maintenanceSchedule.rvId).get();
+    const currentMileage = rvSnap.exists ? (rvSnap.data().currentMileage || 0) : 0;
 
-    // Calculate status
     const statusInfo = calculateMaintenanceStatus(maintenanceSchedule, currentMileage);
-    const scheduleWithStatus = {
-        ...maintenanceSchedule.toObject(),
-        status: statusInfo.status,
-        isOverdue: statusInfo.isOverdue,
-        nextMaintenanceDate: statusInfo.nextMaintenanceDate,
-        nextMaintenanceMileage: statusInfo.nextMaintenanceMileage,
-        daysUntilDue: statusInfo.daysUntilDue,
-        mileageUntilDue: statusInfo.mileageUntilDue
-    };
 
     res.status(200).json({
         success: true,
         message: 'Maintenance schedule retrieved successfully',
-        data: scheduleWithStatus
+        data: { ...maintenanceSchedule, ...statusInfo }
     });
 });
+
 
 exports.getMaintenanceByStatus = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const { status } = req.params;
     const selectedRvId = await getSelectedRvByUserId(userId);
-    
+
     let rvId = req.query.rvId;
-    if (!rvId && !selectedRvId) {
-        throw new ApiError('No RV selected. Please select an RV first.', 400);
-    }
+    if (!rvId && !selectedRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
     if (!rvId) rvId = selectedRvId;
 
     const hasAccess = await checkRvOwnership(userId, rvId);
-    if (!hasAccess) {
-        throw new ApiError('You do not have permission to view maintenance for this RV', 403);
-    }
+    if (!hasAccess) throw new ApiError('You do not have permission to view maintenance for this RV', 403);
 
-    // Update RV maintenance status
     const rvStatus = await updateRVMaintenanceStatusUtil(rvId);
 
-    const rv = await RV.findById(rvId).select('currentMileage');
-    const currentMileage = rv?.currentMileage || 0;
+    const rvSnap = await rvCol().doc(rvId).get();
+    const currentMileage = rvSnap.exists ? (rvSnap.data().currentMileage || 0) : 0;
 
-    const maintenanceSchedules = await MaintenanceSchedule.find({
-        user: userId,
-        rvId
-    });
+    const snap = await col().where('user', '==', userId).where('rvId', '==', rvId).get();
+    const maintenanceSchedules = queryToArr(snap);
 
-    if (!maintenanceSchedules || maintenanceSchedules.length === 0) {
-        return res.status(200).json({
-            success: true,
-            message: 'No maintenance schedules found',
-            data: [],
-            rvMaintenanceStatus: rvStatus
-        });
+    if (!maintenanceSchedules.length) {
+        return res.status(200).json({ success: true, message: 'No maintenance schedules found', data: [], rvMaintenanceStatus: rvStatus });
     }
 
     const schedulesWithStatus = maintenanceSchedules.map(schedule => {
         const statusInfo = calculateMaintenanceStatus(schedule, currentMileage);
-        return {
-            ...schedule.toObject(),
-            status: statusInfo.status,
-            isOverdue: statusInfo.isOverdue,
-            nextMaintenanceDate: statusInfo.nextMaintenanceDate,
-            nextMaintenanceMileage: statusInfo.nextMaintenanceMileage,
-            daysUntilDue: statusInfo.daysUntilDue,
-            mileageUntilDue: statusInfo.mileageUntilDue
-        };
+        return { ...schedule, ...statusInfo };
     });
 
     let filteredSchedules = schedulesWithStatus;
@@ -239,10 +171,10 @@ exports.getMaintenanceByStatus = asyncHandler(async (req, res) => {
 
     res.status(200).json({
         success: true,
-        message: `Maintenance schedules ${status !== 'all' ? `with status '${status}'` : ''} retrieved successfully`,
+        message: `Maintenance schedules${status !== 'all' ? ` with status '${status}'` : ''} retrieved successfully`,
         data: filteredSchedules,
         summary,
-        rvMaintenanceStatus: rvStatus // Include RV status
+        rvMaintenanceStatus: rvStatus
     });
 });
 
@@ -250,233 +182,137 @@ exports.getMaintenanceByStatus = asyncHandler(async (req, res) => {
 exports.getMaintenanceDashboard = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const selectedRvId = await getSelectedRvByUserId(userId);
-    
+
     let rvId = req.query.rvId;
-    if (!rvId && !selectedRvId) {
-        throw new ApiError('No RV selected. Please select an RV first.', 400);
-    }
+    if (!rvId && !selectedRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
     if (!rvId) rvId = selectedRvId;
 
     const hasAccess = await checkRvOwnership(userId, rvId);
-    if (!hasAccess) {
-        throw new ApiError('You do not have permission to view maintenance for this RV', 403);
-    }
+    if (!hasAccess) throw new ApiError('You do not have permission to view maintenance for this RV', 403);
 
-    // Update RV maintenance status when dashboard is accessed
     const rvStatus = await updateRVMaintenanceStatusUtil(rvId);
 
-    const rv = await RV.findById(rvId).select('currentMileage');
-    const currentMileage = rv?.currentMileage || 0;
+    const rvSnap = await rvCol().doc(rvId).get();
+    const currentMileage = rvSnap.exists ? (rvSnap.data().currentMileage || 0) : 0;
 
-    const maintenanceSchedules = await MaintenanceSchedule.find({
-        user: userId,
-        rvId
-    });
+    const snap = await col().where('user', '==', userId).where('rvId', '==', rvId).get();
+    const maintenanceSchedules = queryToArr(snap);
 
-    if (!maintenanceSchedules || maintenanceSchedules.length === 0) {
-        return res.status(200).json({
-            success: true,
-            message: 'No maintenance schedules found',
-            data: {
-                overdue: [],
-                upcoming: [],
-                scheduled: [],
-                completed: [],
-                summary: {
-                    total: 0,
-                    overdue: 0,
-                    upcoming: 0,
-                    scheduled: 0,
-                    completed: 0
-                }
-            },
-            rvMaintenanceStatus: rvStatus // Include RV status
-        });
+    const emptyDashboard = {
+        overdue: [], upcoming: [], scheduled: [], completed: [],
+        summary: { total: 0, overdue: 0, upcoming: 0, scheduled: 0, completed: 0 }
+    };
+
+    if (!maintenanceSchedules.length) {
+        return res.status(200).json({ success: true, message: 'No maintenance schedules found', data: emptyDashboard, rvMaintenanceStatus: rvStatus });
     }
 
-    const overdue = [];
-    const upcoming = [];
-    const scheduled = [];
-    const completed = [];
+    const overdue = [], upcoming = [], scheduled = [], completed = [];
 
     maintenanceSchedules.forEach(schedule => {
         const statusInfo = calculateMaintenanceStatus(schedule, currentMileage);
-        const scheduleWithStatus = {
-            ...schedule.toObject(),
-            status: statusInfo.status,
-            isOverdue: statusInfo.isOverdue,
-            nextMaintenanceDate: statusInfo.nextMaintenanceDate,
-            nextMaintenanceMileage: statusInfo.nextMaintenanceMileage,
-            daysUntilDue: statusInfo.daysUntilDue,
-            mileageUntilDue: statusInfo.mileageUntilDue
-        };
-
-        switch (statusInfo.status) {
-            case 'overdue':
-                overdue.push(scheduleWithStatus);
-                break;
-            case 'upcoming':
-                upcoming.push(scheduleWithStatus);
-                break;
-            case 'scheduled':
-                scheduled.push(scheduleWithStatus);
-                break;
-            case 'completed':
-                completed.push(scheduleWithStatus);
-                break;
-        }
+        const s = { ...schedule, ...statusInfo };
+        if (statusInfo.status === 'overdue') overdue.push(s);
+        else if (statusInfo.status === 'upcoming') upcoming.push(s);
+        else if (statusInfo.status === 'scheduled') scheduled.push(s);
+        else if (statusInfo.status === 'completed') completed.push(s);
     });
 
     overdue.sort((a, b) => (a.daysUntilDue || -9999) - (b.daysUntilDue || -9999));
     upcoming.sort((a, b) => (a.daysUntilDue || 9999) - (b.daysUntilDue || 9999));
     scheduled.sort((a, b) => (a.daysUntilDue || 9999) - (b.daysUntilDue || 9999));
-    // Sort completed by completion date, most recent first
     completed.sort((a, b) => {
         const dateA = a.completionDate ? new Date(a.completionDate) : new Date(0);
         const dateB = b.completionDate ? new Date(b.completionDate) : new Date(0);
-        return dateB - dateA; // Descending order (newest first)
+        return dateB - dateA;
     });
 
-    const summary = {
-        total: maintenanceSchedules.length,
-        overdue: overdue.length,
-        upcoming: upcoming.length,
-        scheduled: scheduled.length,
-        completed: completed.length
-    };
+    const summary = { total: maintenanceSchedules.length, overdue: overdue.length, upcoming: upcoming.length, scheduled: scheduled.length, completed: completed.length };
 
     res.status(200).json({
         success: true,
         message: 'Maintenance dashboard retrieved successfully',
-        data: {
-            overdue,
-            upcoming,
-            scheduled,
-            completed,
-            summary
-        },
-        rvMaintenanceStatus: rvStatus // Include RV status
+        data: { overdue, upcoming, scheduled, completed, summary },
+        rvMaintenanceStatus: rvStatus
     });
 });
 
+
 exports.updateMaintenanceSchedule = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    
-    const existingSchedule = await MaintenanceSchedule.findOne({
-        _id: req.params.id,
-        user: userId
-    });
 
-    if (!existingSchedule) {
-        throw new ApiError('Maintenance schedule not found or access denied', 404);
-    }
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) throw new ApiError('Maintenance schedule not found or access denied', 404);
 
-    if (req.body.rvId && req.body.rvId !== existingSchedule.rvId.toString()) {
+    const existingSchedule = docToObj(snap);
+    if (existingSchedule.user !== userId) throw new ApiError('Maintenance schedule not found or access denied', 404);
+
+    if (req.body.rvId && req.body.rvId !== existingSchedule.rvId) {
         const hasAccess = await checkRvOwnership(userId, req.body.rvId);
-        if (!hasAccess) {
-            throw new ApiError('You do not have permission to assign maintenance to this RV', 403);
-        }
+        if (!hasAccess) throw new ApiError('You do not have permission to assign maintenance to this RV', 403);
     }
 
-    const maintenanceSchedule = await MaintenanceSchedule.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true, runValidators: true }
-    );
+    await col().doc(req.params.id).update({ ...req.body, updatedAt: FieldValue.serverTimestamp() });
+    const maintenanceSchedule = docToObj(await col().doc(req.params.id).get());
 
-    // Update RV maintenance status after updating schedule
-    // Update both old and new RV if rvId changed
-    if (req.body.rvId && req.body.rvId !== existingSchedule.rvId.toString()) {
-        await updateRVMaintenanceStatusUtil(existingSchedule.rvId); // Update old RV
-        await updateRVMaintenanceStatusUtil(req.body.rvId); // Update new RV
+    if (req.body.rvId && req.body.rvId !== existingSchedule.rvId) {
+        await updateRVMaintenanceStatusUtil(existingSchedule.rvId);
+        await updateRVMaintenanceStatusUtil(req.body.rvId);
     } else {
         await updateRVMaintenanceStatusUtil(maintenanceSchedule.rvId);
     }
 
-    res.status(200).json({
-        success: true,
-        message: 'Maintenance schedule updated successfully',
-        data: maintenanceSchedule
-    });
+    res.status(200).json({ success: true, message: 'Maintenance schedule updated successfully', data: maintenanceSchedule });
 });
 
 
 exports.deleteMaintenanceSchedule = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    
-    const maintenanceSchedule = await MaintenanceSchedule.findOneAndDelete({
-        _id: req.params.id,
-        user: userId
-    });
 
-    if (!maintenanceSchedule) {
-        throw new ApiError('Maintenance schedule not found or access denied', 404);
-    }
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) throw new ApiError('Maintenance schedule not found or access denied', 404);
 
-    // Update RV maintenance status after deleting schedule
+    const maintenanceSchedule = docToObj(snap);
+    if (maintenanceSchedule.user !== userId) throw new ApiError('Maintenance schedule not found or access denied', 404);
+
+    await col().doc(req.params.id).delete();
     await updateRVMaintenanceStatusUtil(maintenanceSchedule.rvId);
 
-    res.status(200).json({
-        success: true,
-        message: 'Maintenance schedule deleted successfully',
-        data: {}
-    });
+    res.status(200).json({ success: true, message: 'Maintenance schedule deleted successfully', data: {} });
 });
 
-// @desc    Mark a specific maintenance schedule as completed
-// @route   PUT /api/maintenance-schedule/update-rv-status/:rvId
-// @access  Private
+
 exports.updateRVMaintenanceStatus = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const { rvId } = req.params;
     const { maintenanceScheduleId, vendor, cost, date } = req.body;
 
-    if (!maintenanceScheduleId) {
-        throw new ApiError('maintenanceScheduleId is required in request body', 400);
-    }
+    if (!maintenanceScheduleId) throw new ApiError('maintenanceScheduleId is required in request body', 400);
 
     const hasAccess = await checkRvOwnership(userId, rvId);
-    if (!hasAccess) {
-        throw new ApiError('You do not have permission to update status for this RV', 403);
-    }
+    if (!hasAccess) throw new ApiError('You do not have permission to update status for this RV', 403);
 
-    // Find the specific maintenance schedule
-    const maintenanceSchedule = await MaintenanceSchedule.findOne({
-        _id: maintenanceScheduleId,
-        user: userId,
-        rvId
+    const snap = await col().doc(maintenanceScheduleId).get();
+    if (!snap.exists) throw new ApiError('Maintenance schedule not found or access denied', 404);
+
+    const ms = docToObj(snap);
+    if (ms.user !== userId || ms.rvId !== rvId) throw new ApiError('Maintenance schedule not found or access denied', 404);
+
+    await col().doc(maintenanceScheduleId).update({
+        isCompleted: true,
+        completionDate: new Date().toISOString(),
+        vendor,
+        cost,
+        date,
+        updatedAt: FieldValue.serverTimestamp()
     });
 
-    if (!maintenanceSchedule) {
-        throw new ApiError('Maintenance schedule not found or access denied', 404);
-    }
-
-    // Update the specific maintenance schedule to mark it as completed
-    maintenanceSchedule.isCompleted = true;
-    maintenanceSchedule.completionDate = new Date();
-    maintenanceSchedule.vendor = vendor;
-    maintenanceSchedule.cost = cost;
-    maintenanceSchedule.date = date;
-    await maintenanceSchedule.save();
-
-    // Now update the RV's overall maintenance status
     const rvStatus = await updateRVMaintenanceStatusUtil(rvId);
+    const updated = docToObj(await col().doc(maintenanceScheduleId).get());
 
     res.status(200).json({
         success: true,
         message: 'Maintenance schedule marked as completed and RV status updated successfully',
-        data: {
-            maintenanceSchedule,
-            rvStatus
-        }
+        data: { maintenanceSchedule: updated, rvStatus }
     });
 });
-
-// Helper function to check if user has access to the RV
-async function checkRvOwnership(userId, rvId) {
-    const user = await User.findById(userId).select('rvIds');
-    if (!user || !user.rvIds.includes(rvId)) {
-        return false;
-    }
-    return true;
-}

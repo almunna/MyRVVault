@@ -1,94 +1,93 @@
-const SellRv = require('./SellRv');
+const { db, FieldValue } = require('../../../config/db');
 const asyncHandler = require('../../../utils/asyncHandler');
-const User = require('../User/User');
-const queryBuilder = require('../../../builder/queryBuilder');
+const { docToObj, queryToArr } = require('../../../utils/firestoreHelper');
+const QueryBuilder = require('../../../builder/queryBuilder');
+
+const col = () => db.collection('sellRvs');
+const userCol = () => db.collection('users');
 
 
 const addSellRv = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const sellRv = await SellRv.create({ ...req.body, user: userId });
-    const user = await User.findById(userId);
 
-    if (user) {
-        user.sellRvIds.push(sellRv._id);
-        // user.selectedRvId = sellRv._id;
-        await user.save();
-    }
+    const data = {
+        ...req.body,
+        user: userId,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
+    const ref = await col().add(data);
+    const snap = await ref.get();
+    const sellRv = docToObj(snap);
 
-    if (req.body.selectedRvId) {
-        await SellRv.findByIdAndUpdate(req.body.selectedRvId, { isSold: true });
-    }
-
-    res.status(201).json({
-        success: true,
-        data: sellRv
+    // Add to user's sellRvIds
+    await userCol().doc(userId).update({
+        sellRvIds: FieldValue.arrayUnion(sellRv.id),
+        updatedAt: FieldValue.serverTimestamp()
     });
+
+    // Mark the selected RV as sold if provided
+    if (req.body.selectedRvId) {
+        await col().doc(req.body.selectedRvId).update({ isSold: true, updatedAt: FieldValue.serverTimestamp() });
+    }
+
+    res.status(201).json({ success: true, data: sellRv });
 });
 
 
 const getUserSellRvs = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const totalRvs = await SellRv.countDocuments({ user: userId });
 
-    const query = SellRv.find({ user: userId });
-    const paginatedQuery = new queryBuilder(query, req.query)
-        .filter()
-        .sort()
-        .paginate()
-        .fields();
-
-    const rvs = await paginatedQuery.modelQuery;
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const colRef = col().where('user', '==', userId);
+    const result = await new QueryBuilder(colRef, req.query).filter().sort().paginate().execute();
 
     res.status(200).json({
         success: true,
-        count: rvs.length,
-        total: totalRvs,
-        page,
-        limit,
-        data: rvs
+        count: result.data.length,
+        total: result.meta.total,
+        page: result.meta.page,
+        limit: result.meta.limit,
+        data: result.data
     });
 });
 
+
 const getSellRv = asyncHandler(async (req, res) => {
-    const sellRv = await SellRv.findById(req.params.id);
-    res.status(200).json({
-        success: true,
-        data: sellRv
-    })
-})
+    const snap = await col().doc(req.params.id).get();
+    const sellRv = snap.exists ? docToObj(snap) : null;
+    res.status(200).json({ success: true, data: sellRv });
+});
+
 
 const updateSellRv = asyncHandler(async (req, res) => {
-    const sellRv = await SellRv.findByIdAndUpdate(req.params.id, req.body, {
-        new: true
-    })
-    res.status(200).json({
-        success: true,
-        data: sellRv
-    })
-})
+    await col().doc(req.params.id).update({ ...req.body, updatedAt: FieldValue.serverTimestamp() });
+    const sellRv = docToObj(await col().doc(req.params.id).get());
+    res.status(200).json({ success: true, data: sellRv });
+});
+
 
 const deleteSellRv = asyncHandler(async (req, res) => {
-    const sellRv = await SellRv.findByIdAndDelete(req.params.id);
-    // Remove the deleted SellRv's ID from all users' sellRvIds arrays
-    if (sellRv) {
-        await User.updateMany(
-            { sellRvIds: sellRv._id },
-            { $pull: { sellRvIds: sellRv._id } }
-        );
-    }
-    res.status(200).json({
-        success: true,
-        data: sellRv
-    })
-})
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) return res.status(200).json({ success: true, data: null });
 
-module.exports = {
-    addSellRv,
-    getUserSellRvs,
-    getSellRv,
-    updateSellRv,
-    deleteSellRv
-};
+    const sellRv = docToObj(snap);
+    await col().doc(req.params.id).delete();
+
+    // Remove from all users' sellRvIds
+    const usersSnap = await userCol().where('sellRvIds', 'array-contains', req.params.id).get();
+    if (!usersSnap.empty) {
+        const batch = db.batch();
+        usersSnap.docs.forEach(doc => {
+            batch.update(doc.ref, {
+                sellRvIds: FieldValue.arrayRemove(req.params.id),
+                updatedAt: FieldValue.serverTimestamp()
+            });
+        });
+        await batch.commit();
+    }
+
+    res.status(200).json({ success: true, data: sellRv });
+});
+
+
+module.exports = { addSellRv, getUserSellRvs, getSellRv, updateSellRv, deleteSellRv };

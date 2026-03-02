@@ -1,0 +1,16 @@
+# Firebase service account — NEVER commit this
+Backend/my-rv-vault-26-firebase-adminsdk-fbsvc-9baea55f56.json
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db

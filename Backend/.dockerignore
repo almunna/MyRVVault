@@ -1,5 +1,7 @@
 node_modules
 .env
+.env.*
 uploads
 .github
 npm-debug.log*
+my-rv-vault-26-firebase-adminsdk-fbsvc-9baea55f56.json

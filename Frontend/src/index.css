@@ -199,3 +199,34 @@
 .custom-select .ant-select-item-option-selected {
   background-color: #E8F0E8 !important;
 }
+
+/* Orange variant for AddRv form */
+.custom-select-orange .ant-select-selector {
+  background-color: #ffffff !important;
+  border: 2px solid #F9B038 !important;
+  border-radius: 6px !important;
+}
+.custom-select-orange .ant-select-selection-item {
+  color: #111827 !important;
+}
+.custom-select-orange .ant-select-selection-placeholder {
+  color: #9ca3af !important;
+}
+.custom-select-orange .ant-select-arrow {
+  color: #F9B038 !important;
+}
+.custom-select-orange .ant-select-item-option {
+  color: #111827 !important;
+}
+.custom-select-orange .ant-select-item-option-selected {
+  background-color: #fff3d6 !important;
+}
+/* Multi-select tag styling */
+.custom-select-orange .ant-select-selection-item {
+  background-color: #fff3d6 !important;
+  border-color: #F9B038 !important;
+  color: #111827 !important;
+}
+.custom-select-orange .ant-select-selection-item-remove {
+  color: #F9B038 !important;
+}

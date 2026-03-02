@@ -1,5 +1,5 @@
 const express = require('express');
-const connectDB = require('./config/db');
+require('./config/db'); // Initialize Firebase Firestore
 const app = express();
 const cors = require('cors');
 const path = require("path");
@@ -22,25 +22,25 @@ app.use("/", express.static(path.join(__dirname, '..')));
 
 dotenv.config();
 
-// DB Connection
-connectDB();
+// Firebase Firestore is initialized via require('./config/db') above
 
 // Middleware
 // Increase JSON payload limit to handle large tokens (default is 100kb)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-const allowedOrigins = [         // your main frontend from .env
-  "http://10.10.20.60:3002",   // fallback localhost
+const allowedOrigins = [
+  process.env.FRONTEND_URL,      // Render frontend URL
+  "http://10.10.20.60:3002",
   "http://localhost:5173",
-  "http://localhost:3002",     // Your current frontend
+  "http://localhost:3002",
   "http://51.20.217.10:5000",
   "http://51.20.217.10:3000",
   "http://51.20.217.10:3001",
   'http://51.20.217.10:3001',
-  "http://localhost:3000",     // Next.js dev server
-  "http://10.10.20.52:3000",   // Next.js on local network
+  "http://localhost:3000",
+  "http://10.10.20.52:3000",
   "*"
-];
+].filter(Boolean);
 
 
 // Security Middlewares (apply CORS only to API routes so static assets aren't blocked)

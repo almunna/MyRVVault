@@ -7,7 +7,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git rm:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm uninstall mongoose)",
+      "Bash(npm install @react-oauth/google)",
+      "Bash(ls -1d \"f:/My RV Vault\"/*/)",
+      "Bash(git -C \"f:/My RV Vault\" log --oneline -10)",
+      "Bash(git -C \"f:/My RV Vault\" remote -v)",
+      "Bash(git -C \"f:/My RV Vault\" status --short)"
     ]
   }
 }

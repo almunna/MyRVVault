@@ -1,11 +1,10 @@
-const User = require('../app/module/User/User');
+const { db } = require('../config/db');
+
 async function checkValidRv(userId, rvId) {
-    // Check if the user has the specified RV in their user schema
-    const user = await User.findById(userId).select('rvIds');
-    if (!user || !user.rvIds.includes(rvId)) {
-        return false;
-    }
-    return true;
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) return false;
+  const rvIds = userDoc.data().rvIds || [];
+  return rvIds.includes(rvId);
 }
 
 module.exports = checkValidRv;
