@@ -1,3 +1,6 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 require('./config/db'); // Initialize Firebase Firestore
 const app = express();
@@ -5,29 +8,7 @@ const cors = require('cors');
 const path = require("path");
 const fs = require("fs");
 const { errorHandler } = require('./errors/errorHandler');
-// const authRoutes = require('./routes/auth.routes'); 
-// const userRoutes = require('./routes/user.routes');
-// const rvRoutes = require('./routes/rv.routes');
-// const membershipRoutes = require('./routes/membership.routes')
-// const insuranceRoutes = require('./routes/insurance.routes');
-// const maintenanceRoutes = require('./routes/maintenance.routes');
-// const repairRoutes = require('./routes/repair.routes');
-const dotenv = require('dotenv');
-// const path = require('path');
-// const newExpenseRoutes = require('./routes/newExpense.routes');
-// const tripsRoutes = require('./routes/trips.routes');
-// const chassisRoutes = require('./routes/chessis.routes');
-// const tireRoutes = require('./routes/appliance.routes/tire.routes');
-app.use("/", express.static(path.join(__dirname, '..')));
 
-dotenv.config();
-
-// Firebase Firestore is initialized via require('./config/db') above
-
-// Middleware
-// Increase JSON payload limit to handle large tokens (default is 100kb)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const allowedOrigins = [
   "https://myrvvault.onrender.com",  // Render frontend (hardcoded for reliability)
   process.env.FRONTEND_URL,          // custom domain override
@@ -41,23 +22,22 @@ const allowedOrigins = [
   "http://10.10.20.52:3000",
 ].filter(Boolean);
 
-
-// Security Middlewares (apply CORS only to API routes so static assets aren't blocked)
-// app.use(helmet());  
+// Apply CORS as the very first middleware so preflight OPTIONS requests are handled before anything else
 const apiCors = cors({
   origin: function (origin, callback) {
-    console.log("Incoming origin:", origin);
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      console.log("Allowed:", origin);
-      return callback(null, true);
-    }
-    console.log("Blocked:", origin);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
 });
-app.use('/api', apiCors);
+app.use(apiCors);
+
+app.use("/", express.static(path.join(__dirname, '..')));
+
+// Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve admin SPA and its assets before API routes
 app.use('/admin', express.static(path.join(__dirname, 'admin', 'dist')))
