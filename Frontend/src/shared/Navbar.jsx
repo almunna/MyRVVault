@@ -44,11 +44,11 @@ export const Navbar = () => {
   ];
 
   const items = [
-    { key: "newExpense", label: <Link to="/newExpense">New Expense</Link> },
-    { key: "newRepair", label: <Link to="/newRepair">New Repair</Link> },
+    { key: "newExpense", label: <span>New Expense</span> }, // <Link to="/newExpense">New Expense</Link>
+    { key: "newRepair", label: <span>New Repair</span> }, // <Link to="/newRepair">New Repair</Link>
     {
       key: "reports",
-      label: <Link to="/favouriteReports">Favorite Reports</Link>,
+      label: <span>Favorite Reports</span>, // <Link to="/favouriteReports">Favorite Reports</Link>
     },
     {
       key: "information",

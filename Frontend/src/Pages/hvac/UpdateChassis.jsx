@@ -1,45 +1,82 @@
-import {
-  Button,
-  ConfigProvider,
-  DatePicker,
-  Form,
-  Input,
-  message,
-  Select,
-  Spin,
-} from "antd";
-import Dragger from "antd/es/upload/Dragger";
+import { Form, Input, message, Select, Spin } from "antd";
 import React, { useEffect, useState } from "react";
-import {
-  InboxOutlined,
-  MinusCircleOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  useAddChassisMutation,
-  useGetSingleChassisQuery,
-  useUpdateChassisMutation,
-} from "../redux/api/routesApi";
+import { useGetSingleChassisQuery, useUpdateChassisMutation } from "../redux/api/routesApi";
+
 const { Option } = Select;
-import { imageUrl } from "../redux/api/baseApi";
-import { useGetProfileQuery } from "../redux/api/userApi";
-import { Navigate } from "../../Navigate";
-dayjs.extend(customParseFormat);
-const dateFormat = "YYYY-MM-DD";
+
+const SectionHeading = ({ title }) => (
+  <div className="flex items-center gap-3 mb-5 mt-6">
+    <div className="w-1 h-5 rounded-full bg-[#F9B038]" />
+    <h2 className="text-sm font-semibold text-[#F9B038] uppercase tracking-widest">
+      {title}
+    </h2>
+    <div className="flex-1 h-px bg-[#F9B038]/20" />
+  </div>
+);
+
+const inputClass = "w-full bg-white border-2 border-[#F9B038] text-gray-900 placeholder-gray-400 rounded-md py-2";
+const labelStyle = { color: "#F9B038", fontWeight: 500 };
+
+const FilterList = ({ name, label }) => (
+  <>
+    <SectionHeading title={label} />
+    <Form.List name={name} initialValue={[{}]}>
+      {(fields, { add, remove }) => (
+        <div className="space-y-3">
+          {fields.map(({ key, name: fieldName, ...restField }) => (
+            <div key={key} className="grid grid-cols-12 gap-3 items-end">
+              <Form.Item
+                label={<span style={labelStyle}>Name</span>}
+                {...restField}
+                name={[fieldName, "beltName"]}
+                className="col-span-5 mb-0"
+              >
+                <Input placeholder="Enter name" className={inputClass} />
+              </Form.Item>
+              <Form.Item
+                label={<span style={labelStyle}>Part Number</span>}
+                {...restField}
+                name={[fieldName, "partNumber"]}
+                className="col-span-5 mb-0"
+              >
+                <Input type="number" placeholder="Enter part number" className={inputClass} />
+              </Form.Item>
+              <div className="col-span-2 flex items-center gap-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => add()}
+                  className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-[#F9B038] text-[#F9B038] hover:bg-[#F9B038] hover:text-black transition-all duration-200 text-sm font-bold"
+                >
+                  +
+                </button>
+                {fields.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => remove(fieldName)}
+                    className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-red-300 text-red-400 hover:bg-red-50 transition-all duration-200 text-sm font-bold"
+                  >
+                    −
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Form.List>
+  </>
+);
+
 const UpdateChassis = () => {
   const { id } = useParams();
-  const { data: singleUpdate } = useGetSingleChassisQuery({ id });
-  console.log(singleUpdate);
-  const [addChassisInformation] = useUpdateChassisMutation();
+  const navigate = useNavigate();
+  const { data: singleUpdate, isLoading: dataLoading } = useGetSingleChassisQuery({ id });
+  const [updateChassis] = useUpdateChassisMutation();
   const [isFormFilled, setIsFormFilled] = useState(false);
   const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    handleFormChange(); // initial check
-  }, []);
-  // ✅ Check if any field has value
+  const [form] = Form.useForm();
+
   const handleFormChange = () => {
     const values = form.getFieldsValue();
     const hasValue = Object.values(values).some(
@@ -47,62 +84,11 @@ const UpdateChassis = () => {
     );
     setIsFormFilled(hasValue);
   };
-  const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const { data: profileData } = useGetProfileQuery();
-  const rvId = profileData?.user?.selectedRvId?._id;
-  const handleSubmit = async (values) => {
-    console.log(values);
-    if (!rvId) {
-      message.error(
-        "Please select your RV from the home page before submitting."
-      );
-      return;
-    }
-    const data = {
-      rvId: rvId,
-      mfg: values.Manufacturer,
-      modelNo: values.Model,
-      name: values.Name,
-      serialId: values.Serial,
-      fuelType: values.FuelType,
 
-      engineModel: values.engineModel || "",
-      hp: Number(values.hp) || 0,
-      belt:
-        values.belts?.map((item) => ({
-          name: item.beltName,
-          partNo: Number(item.partNumber),
-        })) || [],
-      oilFilter:
-        values.Oil?.map((item) => ({
-          name: item.beltName,
-          partNo: Number(item.partNumber),
-        })) || [],
-      fuelFilter:
-        values.Fuel?.map((item) => ({
-          name: item.beltName,
-          partNo: Number(item.partNumber),
-        })) || [],
-    };
-    setLoading(true);
-    try {
-      const res = await addChassisInformation({ formData: data, id }).unwrap();
-      message.success(res?.message);
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-      message.error(err?.data?.message);
-    }
-  };
-  useEffect(() => {
-    form.setFieldsValue({ cooking: [""], ingredients: [""], nutrition: [""] });
-  }, [form]);
-
+  // Pre-populate form when data loads
   useEffect(() => {
     if (singleUpdate?.data) {
       const admin = singleUpdate.data;
-
       form.setFieldsValue({
         Manufacturer: admin.mfg || "",
         Model: admin.modelNo || "",
@@ -111,400 +97,139 @@ const UpdateChassis = () => {
         Serial: admin.serialId || "",
         FuelType: admin.fuelType || "",
         engineModel: admin.engineModel || "",
-        Horsepower: admin.hp || "",
-        // belt mapping
-        belts: admin.belt?.map((b) => ({
-          beltName: b.name,
-          partNumber: b.partNo,
-        })) || [{}],
-        // oil filter mapping
-        Oil: admin.oilFilter?.map((o) => ({
-          beltName: o.name,
-          partNumber: o.partNo,
-        })) || [{}],
-        // fuel filter mapping
-        Fuel: admin.fuelFilter?.map((f) => ({
-          beltName: f.name,
-          partNumber: f.partNo,
-        })) || [{}],
+        belts: admin.belt?.map((b) => ({ beltName: b.name, partNumber: b.partNo })) || [{}],
+        Oil: admin.oilFilter?.map((o) => ({ beltName: o.name, partNumber: o.partNo })) || [{}],
+        Fuel: admin.fuelFilter?.map((f) => ({ beltName: f.name, partNumber: f.partNo })) || [{}],
       });
+      setIsFormFilled(true);
     }
   }, [singleUpdate, form]);
 
-  return (
-    <div className="container m-auto">
-      <div className=" lg:mt-11 mt-6 px-3">
-        <div className="flex justify-between items-center pb-7 lg:pb-0">
-          <h1 className="text-3xl font-semibold text-[#F9B038]">
-            Update Chassis information
-          </h1>
-          <Navigate title={'Cancel'}></Navigate>
+  const handleSubmit = async (values) => {
+    const formData = {
+      mfg: values.Manufacturer,
+      modelNo: values.Model,
+      name: values.Name,
+      serialId: values.Serial,
+      fuelType: values.FuelType,
+      engineModel: values.engineModel || "",
+      hp: Number(values.hp) || 0,
+      belt: values.belts?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
+      oilFilter: values.Oil?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
+      fuelFilter: values.Fuel?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
+    };
+    setLoading(true);
+    try {
+      const res = await updateChassis({ formData, id }).unwrap();
+      message.success(res?.message || "Chassis updated successfully!");
+      setLoading(false);
+      navigate("/chassisInfo");
+    } catch (err) {
+      setLoading(false);
+      message.error(err?.data?.message || "Something went wrong!");
+    }
+  };
+
+  if (dataLoading) {
+    return (
+      <div className="py-10 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="h-9 w-48 bg-[#F9B038]/20 rounded-lg mb-8 animate-pulse" />
+          <div className="bg-white rounded-2xl border border-[#F9B038]/20 p-8 animate-pulse space-y-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-10 bg-gray-100 rounded-md w-full" />
+            ))}
+          </div>
         </div>
-        <div className="w-full max-w-4xl m-auto mt-11">
-          <Form
-            form={form}
-            onFinish={handleSubmit}
-            onValuesChange={handleFormChange}
-            layout="vertical"
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link
+            to="/chassisInfo"
+            className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-[#F9B038]/40 text-[#F9B038] hover:bg-[#F9B038] hover:text-black transition-all duration-200 text-lg font-bold"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ←
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-[#F9B038]">Update Chassis</h1>
+            <p className="text-gray-500 text-sm mt-0.5">Edit your chassis information below</p>
+          </div>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl shadow-md border border-[#F9B038]/20 p-8">
+          <Form form={form} onFinish={handleSubmit} onValuesChange={handleFormChange} layout="vertical">
+
+            {/* Basic Info */}
+            <SectionHeading title="Basic Information" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
               <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Manufacturer</span>}
+                label={<span style={labelStyle}>Manufacturer <span className="text-red-500">*</span></span>}
                 name="Manufacturer"
-                rules={[{ required: true, message: "Please input Mfg!" }]}
+                rules={[{ required: true, message: "Please input Manufacturer!" }]}
               >
-                <Input
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Mfg"
-                />
+                <Input className={inputClass} placeholder="e.g. Ford, Freightliner" />
               </Form.Item>
-              <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Model</span>}
-                name="Model"
-                // rules={[{ required: true, message: "Please input Model!" }]}
-              >
-                <Input
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Model"
-                />
+              <Form.Item label={<span style={labelStyle}>Model</span>} name="Model">
+                <Input className={inputClass} placeholder="Model" />
+              </Form.Item>
+              <Form.Item label={<span style={labelStyle}>Name</span>} name="Name">
+                <Input className={inputClass} placeholder="Chassis name" />
+              </Form.Item>
+              <Form.Item label={<span style={labelStyle}>Serial ID</span>} name="Serial">
+                <Input className={inputClass} placeholder="Serial ID" />
               </Form.Item>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Name</span>}
-                name="Name"
-                // rules={[{ required: true, message: "Please input Name!" }]}
-              >
-                <Input
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Name"
-                />
-              </Form.Item>
-              <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Serial ID</span>}
-                name="Serial"
-                // rules={[
-                //   {
-                //     required: true,
-                //     message: "Please input your Fuel Add Oil Filter!",
-                //   },
-                // ]}
-              >
-                <Input
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Serial ID"
-                />
-              </Form.Item>
-            </div>
+
             <Form.Item
-              label={<span style={{ color: "#F9B038" }}>Fuel type</span>}
+              label={<span style={labelStyle}>Fuel Type <span className="text-red-500">*</span></span>}
               name="FuelType"
               rules={[{ required: true, message: "Please select fuel type!" }]}
             >
-              <Select
-                placeholder="Select fuel type"
-                className="custom-select"
-                style={{ height: "40px" }}
-                dropdownStyle={{ backgroundColor: "#F9B038", color: "white" }}
-              >
+              <Select className="custom-select-orange" style={{ height: 40 }} placeholder="Select Fuel Type">
                 <Option value="Diesel">Diesel</Option>
                 <Option value="Gas">Gas</Option>
                 <Option value="N/A">N/A</Option>
               </Select>
             </Form.Item>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Engine Model</span>}
-                name="engineModel"
-                // rules={[
-                //   { required: true, message: "Please input Engine Model" },
-                // ]}
-              >
-                <Input
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Engine Model"
-                />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+              <Form.Item label={<span style={labelStyle}>Engine Model</span>} name="engineModel">
+                <Input className={inputClass} placeholder="Engine Model" />
               </Form.Item>
-              <Form.Item
-                label={<span style={{ color: "#F9B038" }}>Horsepower</span>}
-                name="hp"
-                // rules={[{ required: true, message: "Please input Horsepower" }]}
-              >
-                <Input
-                  type="number"
-                  className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                  placeholder="Horsepower"
-                />
+              <Form.Item label={<span style={labelStyle}>Horsepower</span>} name="hp">
+                <Input type="number" className={inputClass} placeholder="e.g. 350" />
               </Form.Item>
             </div>
-            <h1 className="text-center text-[#F9B038] underline mb-3">Belt</h1>
 
-            <Form.List name="belts" initialValue={[{}]}>
-              {(fields, { add, remove }) => (
-                <>
-                  <div className="grid grid-cols-12">
-                    <div className="col-span-11">
-                      {fields.map(({ key, name, ...restField }) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-12 gap-4 mb-3 items-center"
-                        >
-                          {/* Belt Name with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>
-                                Belt Name
-                              </span>
-                            }
-                            {...restField}
-                            name={[name, "beltName"]}
-                            className="col-span-6"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Belt Name"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
+            {/* Filter Lists */}
+            <FilterList name="belts" label="Belt" />
+            <FilterList name="Oil" label="Oil Filter" />
+            <FilterList name="Fuel" label="Fuel Filter" />
 
-                          {/* Part Number with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>
-                                Part Number
-                              </span>
-                            }
-                            {...restField}
-                            name={[name, "partNumber"]}
-                            className="col-span-5"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Part Number"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
-
-                          {/* Remove Button */}
-                          {fields.length > 1 && (
-                            <MinusCircleOutlined
-                              onClick={() => remove(name)}
-                              className="text-red-500 col-span-1 cursor-pointer"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add Belt Button */}
-                    <Form.Item>
-                      <div>
-                        <Button
-                          style={{
-                            backgroundColor: "#00000000",
-                            border: "1px solid #F9B038",
-                            color: "#F9B038",
-                            width: "32px",
-                            borderRadius: "50%",
-                          }}
-                          type="dashed"
-                          onClick={() => add()}
-                          icon={<PlusOutlined />}
-                          className="border-[#F9B038] text-[#F9B038] mt-7 hover:border-[#d89c2f]"
-                        ></Button>
-                      </div>
-                    </Form.Item>
-                  </div>
-                </>
-              )}
-            </Form.List>
-
-            <h1 className="text-center text-[#F9B038] underline mb-3">
-              Oil Filter
-            </h1>
-
-            <Form.List name="Oil" initialValue={[{}]}>
-              {(fields, { add, remove }) => (
-                <>
-                  <div className="grid grid-cols-12">
-                    <div className="col-span-11">
-                      {fields.map(({ key, name, ...restField }) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-12 gap-4 mb-3 items-center"
-                        >
-                          {/* Belt Name with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>Name</span>
-                            }
-                            {...restField}
-                            name={[name, "beltName"]}
-                            className="col-span-6"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Name"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
-
-                          {/* Part Number with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>
-                                Part Number
-                              </span>
-                            }
-                            {...restField}
-                            name={[name, "partNumber"]}
-                            className="col-span-5"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Part Number"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
-
-                          {/* Remove Button */}
-                          {fields.length > 1 && (
-                            <MinusCircleOutlined
-                              onClick={() => remove(name)}
-                              className="text-red-500 col-span-1 cursor-pointer"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add Belt Button */}
-                    <Form.Item>
-                      <div>
-                        <Button
-                          style={{
-                            backgroundColor: "#00000000",
-                            border: "1px solid #F9B038",
-                            color: "#F9B038",
-                            width: "32px",
-                            borderRadius: "50%",
-                          }}
-                          type="dashed"
-                          onClick={() => add()}
-                          icon={<PlusOutlined />}
-                          className="border-[#F9B038] text-[#F9B038] mt-7 hover:border-[#d89c2f]"
-                        ></Button>
-                      </div>
-                    </Form.Item>
-                  </div>
-                </>
-              )}
-            </Form.List>
-
-            <h1 className="text-center text-[#F9B038] underline mb-3">
-              Fuel Filter
-            </h1>
-
-            <Form.List name="Fuel" initialValue={[{}]}>
-              {(fields, { add, remove }) => (
-                <>
-                  <div className="grid grid-cols-12">
-                    <div className="col-span-11">
-                      {fields.map(({ key, name, ...restField }) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-12 gap-4 mb-3 items-center"
-                        >
-                          {/* Belt Name with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>Name</span>
-                            }
-                            {...restField}
-                            name={[name, "beltName"]}
-                            className="col-span-6"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Name"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
-
-                          {/* Part Number with Label */}
-                          <Form.Item
-                            label={
-                              <span style={{ color: "#F9B038" }}>
-                                Part Number
-                              </span>
-                            }
-                            {...restField}
-                            name={[name, "partNumber"]}
-                            className="col-span-5"
-                            // rules={[{ required: true, message: "Required" }]}
-                          >
-                            <Input
-                              placeholder="Enter Part Number"
-                              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-                            />
-                          </Form.Item>
-
-                          {/* Remove Button */}
-                          {fields.length > 1 && (
-                            <MinusCircleOutlined
-                              onClick={() => remove(name)}
-                              className="text-red-500 col-span-1 cursor-pointer"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add Belt Button */}
-                    <Form.Item>
-                      <div>
-                        <Button
-                          style={{
-                            backgroundColor: "#00000000",
-                            border: "1px solid #F9B038",
-                            color: "#F9B038",
-                            width: "32px",
-                            borderRadius: "50%",
-                          }}
-                          type="dashed"
-                          onClick={() => add()}
-                          icon={<PlusOutlined />}
-                          className="border-[#F9B038] text-[#F9B038] mt-7 hover:border-[#d89c2f]"
-                        ></Button>
-                      </div>
-                    </Form.Item>
-                  </div>
-                </>
-              )}
-            </Form.List>
-
-            <Form.Item className=" pt-9">
+            {/* Submit */}
+            <div className="pt-6 border-t border-gray-100 mt-6">
               <button
                 type="submit"
                 disabled={!isFormFilled || loading}
-                className={`w-full py-2 rounded flex justify-center items-center gap-2 transition-all duration-300 ${
+                className={`w-full py-3 rounded-xl font-semibold text-base flex justify-center items-center gap-2 transition-all duration-300 ${
                   loading
                     ? "bg-[#b37a01] cursor-not-allowed text-white"
                     : isFormFilled
-                    ? "bg-[#F9B038] text-black hover:bg-[#d6952f]"
-                    : "bg-[#8a6f44] text-white cursor-not-allowed"
+                    ? "bg-[#F9B038] text-black hover:bg-[#d6952f] shadow-md hover:shadow-lg"
+                    : "bg-[#e8d5b0] text-[#a08040] cursor-not-allowed"
                 }`}
               >
-                {loading ? (
-                  <>
-                    <Spin size="small" />
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  "Submit"
-                )}
+                {loading ? (<><Spin size="small" /><span>Saving...</span></>) : "Save Changes"}
               </button>
-            </Form.Item>
+            </div>
           </Form>
         </div>
       </div>

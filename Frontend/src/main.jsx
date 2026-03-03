@@ -9,7 +9,7 @@ import { Provider } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '20115312545-abj0h2rdkgjb37rpgch4befmv2hqnj1b.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1060609171550-heaj69620uag6bpqeu6jvjpsqm7eq83e.apps.googleusercontent.com';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

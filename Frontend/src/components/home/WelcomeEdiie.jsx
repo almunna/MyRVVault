@@ -8,18 +8,18 @@ import { Link } from "react-router-dom";
 import { Dropdown, Space } from "antd";
 const WelcomeEdiie = () => {
   const cards = [
-    { to: "/addMembership", label: "Memberships" },
-    { to: "/insuranceInfo", label: "Insurance Info" },
-    { to: "/recalls", label: "Recalls" },
-    { to: "/newMaintenance", label: "Maintenance" },
-    { to: "/checklist", label: "Checklists" },
-    { to: "/reports", label: "Reports" },
-    { to: "/campgroundReview", label: "Campground Reviews" },
-    { to: "/havcApplication", label: "HVAC/Appliances/ Plumbing" },
-    { to: "/addRv", label: "Add RV" },
-    { to: "/myRv", label: "My RV" },
-    { to: "/tire", label: "Tires" },
-    { to: "/rvSold", label: "Sold RV" },
+    { to: "/addMembership", label: "Memberships", enabled: false },
+    { to: "/insuranceInfo", label: "Insurance Info", enabled: false },
+    { to: "/recalls", label: "Recalls", enabled: false },
+    { to: "/newMaintenance", label: "Maintenance", enabled: false },
+    { to: "/checklist", label: "Checklists", enabled: false },
+    { to: "/reports", label: "Reports", enabled: false },
+    { to: "/campgroundReview", label: "Campground Reviews", enabled: false },
+    { to: "/havcApplication", label: "HVAC/Appliances/ Plumbing", enabled: false },
+    { to: "/addRv", label: "Add RV", enabled: true },
+    { to: "/myRv", label: "My RV", enabled: true },
+    { to: "/tire", label: "Tires", enabled: true },
+    { to: "/rvSold", label: "Sold RV", enabled: false },
   ];
 
   return (
@@ -33,14 +33,25 @@ const WelcomeEdiie = () => {
               key={card.to}
               className={`bg-white border border-[#E8F0E8] py-6 rounded-xl hover-lift animate-fadeInUp animate-delay-${(index % 5 + 1) * 100}`}
             >
-              <Link to={card.to}>
-                <div className="flex justify-center">
-                  <img src={logo1} alt="logo" />
+              {card.enabled ? (
+                <Link to={card.to}>
+                  <div className="flex justify-center">
+                    <img src={logo1} alt="logo" />
+                  </div>
+                  <p className="text-lg font-semibold text-center pt-5 text-[#1A1A1A]">
+                    {card.label}
+                  </p>
+                </Link>
+              ) : (
+                <div>
+                  <div className="flex justify-center">
+                    <img src={logo1} alt="logo" />
+                  </div>
+                  <p className="text-lg font-semibold text-center pt-5 text-[#1A1A1A]">
+                    {card.label}
+                  </p>
                 </div>
-                <p className="text-lg font-semibold text-center pt-5 text-[#1A1A1A]">
-                  {card.label}
-                </p>
-              </Link>
+              )}
             </div>
           ))}
         </div>

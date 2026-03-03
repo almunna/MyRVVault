@@ -29,6 +29,8 @@ import UpdatingCompanyInfo from "../Pages/insuranceInfo/UpdatingCompanyInfo";
 import RvSold from "../Pages/rvSold/RvSold";
 import RvSoldInformationForm from "../Pages/rvSold/RvSoldInformationForm";
 import AddRv from "../Pages/addRv/AddRv";
+import RvDetails from "../Pages/addRv/RvDetails";
+import EditRv from "../Pages/addRv/EditRv";
 import UpdateExistMaintainanceOrder from "../Pages/addRv/UpdateExistMaintainanceOrder";
 import CampgroundReview from "../Pages/campgroundReview/CampgroundReview";
 import ViewAllTrip from "../Pages/campgroundReview/ViewAllTrip";
@@ -158,6 +160,16 @@ export const router = createBrowserRouter([
 {
   path: "/myRv",
   element: <ProtectedRoute><MyRv></MyRv></ProtectedRoute>,
+},
+
+{
+  path: "/rvDetails/:id",
+  element: <ProtectedRoute><RvDetails /></ProtectedRoute>,
+},
+
+{
+  path: "/editRv/:id",
+  element: <ProtectedRoute><EditRv /></ProtectedRoute>,
 },
 
 {

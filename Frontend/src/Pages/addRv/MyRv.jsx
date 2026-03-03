@@ -26,7 +26,7 @@ const MyRv = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F0] py-10 px-4">
+      <div className="py-10 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="h-9 w-32 bg-[#F9B038]/20 rounded-lg mb-8 animate-pulse" />
           <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
@@ -48,7 +48,7 @@ const MyRv = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <p className="text-gray-500 text-lg">Something went wrong loading your RVs.</p>
           <button
@@ -65,7 +65,7 @@ const MyRv = () => {
   const rvs = data?.data || [];
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0] py-10 px-4">
+    <div className="py-10 px-4">
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
@@ -104,7 +104,7 @@ const MyRv = () => {
         <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
           {rvs.map((item) => (
             <div
-              key={item._id}
+              key={item.id}
               className="bg-white rounded-2xl border border-[#F9B038]/20 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col"
             >
               {/* Card Header */}
@@ -190,12 +190,18 @@ const MyRv = () => {
               </div>
 
               {/* Card Footer */}
-              <div className="px-5 pb-5">
+              <div className="px-5 pb-5 flex gap-2">
                 <Link
-                  to="/information"
-                  className="block w-full text-center py-2 rounded-xl border-2 border-[#F9B038] text-[#F9B038] font-semibold text-sm hover:bg-[#F9B038] hover:text-black transition-all duration-200"
+                  to={`/rvDetails/${item.id}`}
+                  className="flex-1 text-center py-2 rounded-xl border-2 border-[#F9B038] text-[#F9B038] font-semibold text-sm hover:bg-[#F9B038] hover:text-black transition-all duration-200"
                 >
                   View Details
+                </Link>
+                <Link
+                  to={`/editRv/${item.id}`}
+                  className="flex-1 text-center py-2 rounded-xl bg-[#F9B038] text-black font-semibold text-sm hover:bg-[#d6952f] transition-all duration-200"
+                >
+                  Edit
                 </Link>
               </div>
             </div>

@@ -27,7 +27,7 @@ const routesApi = baseApi.injectEndpoints({
     getSingleRv: builder.query({
       query: ({ id }) => {
         return {
-          url: `/rv/get-rvs/${id}`,
+          url: `/rv/get-rv/${id}`,
           method: "GET",
         };
       },
