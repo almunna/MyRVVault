@@ -7,16 +7,11 @@ const { ApiError } = require('../errors/errorHandler');
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      service: process.env.EMAIL_SERVICE,
+      service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-    }
+      }
     });
   }
 
@@ -49,7 +44,7 @@ class EmailService {
       await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
-      console.error('Error sending verification email:', error);
+      console.error('Error sending verification email:', error.message, error.code, error.response);
       throw new ApiError('Failed to send verification email', 500);
     }
   }
