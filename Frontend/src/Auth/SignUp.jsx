@@ -25,15 +25,12 @@ const SignUp = () => {
     };
     try {
       const payload = await register(data).unwrap();
-      console.log(payload);
       if (payload?.success) {
-
-        localStorage.setItem("email", values?.email);
-        // dispatch(setToken(payload?.data?.accessToken))
+        localStorage.setItem("accessToken", payload.accessToken);
         message.success(payload?.message);
-        navigate("/auth/signUp/verify-email");
+        navigate("/addRv");
       } else {
-        message.error(payload?.message || "Login failed!");
+        message.error(payload?.message || "Registration failed!");
       }
     } catch (error) {
       message.error(error?.data?.message || "Something went wrong. Try again!");

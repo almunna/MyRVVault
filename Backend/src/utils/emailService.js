@@ -4,10 +4,12 @@ const { ApiError } = require('../errors/errorHandler');
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.resend.com',
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY,
       }
     });
   }
@@ -15,7 +17,7 @@ class EmailService {
   async sendVerificationCode(to, code) {
     try {
       await this.transporter.sendMail({
-        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
+        from: `"My RV Vault" <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
         to,
         subject: 'Email Verification Code',
         html: `
@@ -41,7 +43,7 @@ class EmailService {
   async sendPasswordResetCode(to, code) {
     try {
       await this.transporter.sendMail({
-        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
+        from: `"My RV Vault" <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
         to,
         subject: 'Password Reset Code',
         html: `
@@ -67,7 +69,7 @@ class EmailService {
   async sendWelcomeEmail(to, name) {
     try {
       await this.transporter.sendMail({
-        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
+        from: `"My RV Vault" <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
         to,
         subject: 'Welcome to My RV Vault!',
         html: `

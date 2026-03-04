@@ -30,7 +30,7 @@ async function deleteTempUserByEmail(email) {
   await batch.commit();
 }
 
-// REGISTER
+// REGISTER (email verification disabled — re-enable when domain is configured)
 exports.signup = async (req, res, next) => {
   const { name, email, phone, password, confirmPassword } = req.body;
   try {
@@ -43,37 +43,34 @@ exports.signup = async (req, res, next) => {
       throw new ApiError('User already exists', 409);
     }
 
-    // Remove any existing temp user
-    await deleteTempUserByEmail(email);
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const verificationCode = tokenService.generateVerificationCode();
 
-    await db.collection('tempUsers').add({
+    const userRef = await db.collection('users').add({
       name,
       email,
       phone: phone || null,
       password: hashedPassword,
-      verificationCode,
-      verificationCodeExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      isVerified: true,
       role: 'USER',
-      isVerified: false,
+      rvIds: [],
+      selectedRvId: null,
+      provider: 'local',
+      isBlocked: false,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    try {
-      await emailService.sendVerificationCode(email, verificationCode);
-      return res.status(201).json({
-        success: true,
-        message: 'Please verify your email to complete registration',
-        email
-      });
-    } catch (emailError) {
-      await deleteTempUserByEmail(email);
-      return next(new ApiError('Failed to send verification email', 500));
-    }
+    const accessToken = tokenService.generateAccessToken({ id: userRef.id, role: 'USER' });
+    const refreshToken = tokenService.generateRefreshToken({ id: userRef.id, role: 'USER' });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Registration successful',
+      accessToken,
+      refreshToken,
+      user: { id: userRef.id, name, email, rv: 0 }
+    });
   } catch (err) {
     return next(err);
   }
