@@ -1,9 +1,6 @@
 const nodemailer = require('nodemailer');
 const { ApiError } = require('../errors/errorHandler');
 
-/**
- * Email service for sending verification codes, password reset links, etc.
- */
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -15,16 +12,10 @@ class EmailService {
     });
   }
 
-  /**
-   * Send verification code email
-   * @param {string} to - Recipient email
-   * @param {string} code - Verification code
-   * @returns {Promise<boolean>} - Success status
-   */
   async sendVerificationCode(to, code) {
     try {
-      const mailOptions = {
-        from: `"My RV Vault" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      await this.transporter.sendMail({
+        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
         to,
         subject: 'Email Verification Code',
         html: `
@@ -38,84 +29,59 @@ class EmailService {
             <p>If you didn't request this code, please ignore this email.</p>
             <p>Best regards,<br>The My RV Vault Team</p>
           </div>
-        `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
+        `
+      });
       return true;
     } catch (error) {
-      console.error('Error sending verification email:', error.message, error.code, error.response);
+      console.error('Error sending verification email:', error.message, error.code);
       throw new ApiError('Failed to send verification email', 500);
     }
   }
 
-  /**
-   * Send password reset email
-   * @param {string} to - Recipient email
-   * @param {string} code - Reset code
-   * @returns {Promise<boolean>} - Success status
-   */
   async sendPasswordResetCode(to, code) {
     try {
-      const mailOptions = {
-        from: `"My RV Vault" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      await this.transporter.sendMail({
+        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
         to,
         subject: 'Password Reset Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
             <h2 style="color: #2196F3;">Reset Your Password</h2>
-            <p>We received a request to reset your password. Please use the following code to reset your password:</p>
+            <p>We received a request to reset your password. Please use the following code:</p>
             <div style="background-color: #f5f5f5; padding: 10px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
               ${code}
             </div>
             <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this code, please ignore this email or contact support if you have concerns.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
             <p>Best regards,<br>The My RV Vault Team</p>
           </div>
-        `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
+        `
+      });
       return true;
     } catch (error) {
-      console.error('Error sending password reset email:', error);
+      console.error('Error sending password reset email:', error.message, error.code);
       throw new ApiError('Failed to send password reset email', 500);
     }
   }
 
-  /**
-   * Send welcome email after successful registration
-   * @param {string} to - Recipient email
-   * @param {string} name - User's name
-   * @param {string} role - User's role (user or owner)
-   * @returns {Promise<boolean>} - Success status
-   */
-  async sendWelcomeEmail(to, name, role) {
+  async sendWelcomeEmail(to, name) {
     try {
-      const roleSpecificText = role === 'owner' 
-        ? 'Thank you for registering your business with My RV Vault. We\'re excited to have you as a service provider!'
-        : 'Thank you for joining My RV Vault. We\'re excited to help you connect with pet services!';
-
-      const mailOptions = {
-        from: `"My RV Vault" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      await this.transporter.sendMail({
+        from: `"My RV Vault" <${process.env.EMAIL_USER}>`,
         to,
         subject: 'Welcome to My RV Vault!',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-            <h2 style="color: ##35549B;">Welcome to My RV Vault!</h2>
+            <h2 style="color: #35549B;">Welcome to My RV Vault!</h2>
             <p>Hello ${name},</p>
-            <p>${roleSpecificText}</p>
-            <p>You can now log in to your account and start using our services.</p>
+            <p>Thank you for joining My RV Vault. You can now log in and start managing your RV.</p>
             <p>Best regards,<br>The My RV Vault Team</p>
           </div>
-        `,
-      };
-
-      await this.transporter.sendMail(mailOptions);
+        `
+      });
       return true;
     } catch (error) {
-      console.error('Error sending welcome email:', error);
-      // Don't throw an error for welcome emails as they're not critical
+      console.error('Error sending welcome email:', error.message);
       return false;
     }
   }
