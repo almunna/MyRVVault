@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { MenuOutlined, CloseOutlined, RightOutlined } from "@ant-design/icons";
-import { Drawer } from "antd";
+import { MenuOutlined, CloseOutlined, RightOutlined, DownOutlined } from "@ant-design/icons";
+import { Drawer, Dropdown } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { useGetProfileQuery } from "../Pages/redux/api/userApi";
 import logo from "../assets/Home/hero.png";
 
+// ── Hamburger drawer section (small screens) ─────────────────────────────────
 const NavSection = ({ title, items, onClose }) => {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -37,6 +38,30 @@ const NavSection = ({ title, items, onClose }) => {
   );
 };
 
+// ── Desktop dropdown ──────────────────────────────────────────────────────────
+const NavDropdown = ({ label, items }) => {
+  const menuItems = items.map(({ label: itemLabel, to }) => ({
+    key: to,
+    label: (
+      <Link
+        to={to}
+        className="block px-1 py-0.5 text-sm text-[#5A5A5A] hover:text-[#3B7D3C] transition-colors duration-200"
+      >
+        {itemLabel}
+      </Link>
+    ),
+  }));
+
+  return (
+    <Dropdown menu={{ items: menuItems }} trigger={["hover"]} placement="bottomLeft">
+      <button className="flex items-center gap-1 px-3 py-2 text-[#1A1A1A] hover:text-[#3B7D3C] font-medium text-sm transition-colors duration-200 rounded-lg hover:bg-[#F5F5F0]">
+        {label}
+        <DownOutlined className="text-[10px] opacity-60" />
+      </button>
+    </Dropdown>
+  );
+};
+
 export const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -65,7 +90,7 @@ export const Navbar = () => {
     navigate("/auth/login");
   };
 
-  // ── Hamburger menu sections ──────────────────────────────
+  // ── Nav sections (shared between desktop dropdowns and hamburger drawer) ──
   const rvManagementItems = [
     { label: "My RV (Full RV Profile)", to: "/myRv" },
     { label: "Chassis Info", to: "/chassisInfo" },
@@ -98,64 +123,90 @@ export const Navbar = () => {
     { label: "About My RV Vault (Privacy/TOS)", to: "/aboutUs" },
   ];
 
+  const guestLinks = [
+    { label: "Home", to: "/" },
+    { label: "About Us", to: "/aboutUs" },
+    { label: "Privacy Policy", to: "/privecy" },
+    { label: "Terms & Conditions", to: "/terms" },
+  ];
+
   return (
-    <div
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white/90 backdrop-blur-md shadow-sm" : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-site mx-auto">
-        <nav className="flex justify-between items-center py-4 px-4 lg:px-6 2xl:px-8">
+    <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8">
+        <nav className="flex items-center justify-between h-16">
+
           {/* Logo */}
-          <Link to="/" className="flex items-center animate-fadeIn">
-            <img src={logo} alt="My RV Vault" className="h-20 2xl:h-24 w-auto" />
+          <Link to="/" className="flex items-center flex-shrink-0">
+            <img src={logo} alt="My RV Vault" className="h-12 w-auto" />
           </Link>
 
-          {/* Right: Auth + Hamburger */}
-          <div className="flex items-center gap-4">
+          {/* ── Desktop / Tablet Nav (md and above) ── */}
+          <div className="hidden md:flex items-center gap-0.5">
+            {token ? (
+              <>
+                <NavDropdown label="RV Management" items={rvManagementItems} />
+                <NavDropdown label="Vault" items={vaultItems} />
+                <NavDropdown label="Tools" items={toolsItems} />
+                <NavDropdown label="About" items={aboutItems} />
+              </>
+            ) : (
+              guestLinks.map(({ label, to }) => (
+                <Link
+                  key={label}
+                  to={to}
+                  className="px-3 py-2 text-sm text-[#5A5A5A] hover:text-[#3B7D3C] font-medium rounded-lg hover:bg-[#F5F5F0] transition-all duration-200"
+                >
+                  {label}
+                </Link>
+              ))
+            )}
+          </div>
+
+          {/* ── Right: Auth + Hamburger ── */}
+          <div className="flex items-center gap-3 flex-shrink-0">
             {!token ? (
-              <div className="hidden lg:flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-2">
                 <Link to={"/auth/login"} state={{ showModal: true }}>
-                  <button className="text-[#5A5A5A] hover:text-[#3B7D3C] font-medium text-[15px] transition-colors duration-300 px-3 py-2">
+                  <button className="text-[#5A5A5A] hover:text-[#3B7D3C] font-medium text-sm transition-colors duration-300 px-4 py-2 rounded-full hover:bg-[#F5F5F0]">
                     Sign in
                   </button>
                 </Link>
                 <Link to={"/auth/signUp"}>
-                  <button className="bg-[#D4872D] text-white py-2 px-6 rounded-full text-[15px] font-medium btn-accent hover:bg-[#B8721F]">
+                  <button className="bg-[#D4872D] text-white py-2 px-5 rounded-full text-sm font-medium hover:bg-[#B8721F] transition-colors duration-300">
                     Get started
                   </button>
                 </Link>
               </div>
             ) : (
-              <div className="hidden lg:flex items-center gap-3">
-                <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-3">
+                <Link to="/profilePage" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
                   {profileData?.user?.profilePic ? (
                     <img
-                      className="w-[36px] h-[36px] rounded-full object-cover border-2 border-[#E8F0E8]"
+                      className="w-9 h-9 rounded-full object-cover border-2 border-[#E8F0E8]"
                       src={profileData.user.profilePic}
                       alt="profile"
                     />
                   ) : (
-                    <div className="w-[36px] h-[36px] rounded-full bg-[#3B7D3C] flex items-center justify-center text-white font-semibold text-sm">
+                    <div className="w-9 h-9 rounded-full bg-[#3B7D3C] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                       {profileData?.user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </div>
                   )}
-                  <span className="text-[#1A1A1A] text-sm font-medium">
+                  <span className="text-[#1A1A1A] text-sm font-medium max-w-[140px] truncate">
                     {profileData?.user?.name || "User"}
                   </span>
-                </div>
+                </Link>
                 <button
                   onClick={handleLogout}
-                  className="text-[#5A5A5A] hover:text-[#3B7D3C] font-medium text-[14px] transition-colors duration-300 px-3 py-1.5 border border-[#E0E0E0] rounded-full"
+                  className="text-[#5A5A5A] hover:text-[#3B7D3C] font-medium text-sm transition-colors duration-300 px-4 py-1.5 border border-[#E0E0E0] rounded-full hover:border-[#3B7D3C]"
                 >
                   Log Out
                 </button>
               </div>
             )}
 
-            {/* Hamburger — always visible */}
+            {/* Hamburger — small screens only */}
             <button
-              className="text-2xl text-[#1A1A1A] hover:text-[#3B7D3C] transition-colors duration-200 p-1"
+              className="md:hidden text-xl text-[#1A1A1A] hover:text-[#3B7D3C] transition-colors duration-200 p-2 rounded-lg hover:bg-[#F5F5F0]"
               onClick={showDrawer}
               aria-label="Open menu"
             >
@@ -164,7 +215,7 @@ export const Navbar = () => {
           </div>
         </nav>
 
-        {/* ── Drawer ── */}
+        {/* ── Drawer (small screens only) ── */}
         <Drawer
           style={{ backgroundColor: "#FFFFFF" }}
           title={
@@ -178,7 +229,6 @@ export const Navbar = () => {
           closeIcon={<CloseOutlined className="text-[#1A1A1A]" />}
           width={320}
         >
-          {/* Profile info */}
           {token && (
             <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-[#F5F5F0] rounded-xl">
               {profileData?.user?.profilePic ? (
@@ -203,7 +253,6 @@ export const Navbar = () => {
             </div>
           )}
 
-          {/* Sections */}
           {token ? (
             <>
               <NavSection title="RV Management" items={rvManagementItems} onClose={onClose} />
@@ -213,7 +262,6 @@ export const Navbar = () => {
               <NavSection title="Tools" items={toolsItems} onClose={onClose} />
               <div className="h-px bg-[#E8F0E8] my-2" />
               <NavSection title="About" items={aboutItems} onClose={onClose} />
-
               <div className="mt-4 pt-4 border-t border-[#E8F0E8]">
                 <button
                   onClick={() => { handleLogout(); onClose(); }}
@@ -225,14 +273,8 @@ export const Navbar = () => {
             </>
           ) : (
             <>
-              {/* Guest: show limited nav + auth buttons */}
               <ul className="space-y-1 mb-4">
-                {[
-                  { label: "Home", to: "/" },
-                  { label: "About Us", to: "/aboutUs" },
-                  { label: "Privacy Policy", to: "/privecy" },
-                  { label: "Terms & Conditions", to: "/terms" },
-                ].map(({ label, to }) => (
+                {guestLinks.map(({ label, to }) => (
                   <li key={label}>
                     <Link
                       to={to}
