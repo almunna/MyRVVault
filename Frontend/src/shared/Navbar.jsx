@@ -54,9 +54,14 @@ const NavDropdown = ({ label, items }) => {
 
   return (
     <Dropdown menu={{ items: menuItems }} trigger={["hover"]} placement="bottomLeft">
-      <button className="flex items-center gap-1 px-3 py-2 text-[#1A1A1A] hover:text-[#3B7D3C] font-medium text-sm transition-colors duration-200 rounded-lg hover:bg-[#F5F5F0]">
+      <button className="flex items-center gap-1.5 px-3 py-2 text-[#1A1A1A] hover:text-[#3B7D3C] font-medium text-sm transition-colors duration-200 rounded-lg hover:bg-[#F5F5F0] group">
         {label}
-        <DownOutlined className="text-[10px] opacity-60" />
+        <svg
+          className="w-3.5 h-3.5 text-[#D4872D] group-hover:text-[#3B7D3C] transition-colors duration-200 mt-px"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
     </Dropdown>
   );
@@ -133,11 +138,11 @@ export const Navbar = () => {
   return (
     <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
       <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8">
-        <nav className="flex items-center justify-between h-16">
+        <nav className="flex items-center justify-between h-24">
 
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0">
-            <img src={logo} alt="My RV Vault" className="h-12 w-auto" />
+            <img src={logo} alt="My RV Vault" className="h-20 2xl:h-24 w-auto" />
           </Link>
 
           {/* ── Desktop / Tablet Nav (md and above) ── */}
