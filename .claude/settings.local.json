@@ -15,7 +15,9 @@
       "Bash(git -C \"f:/My RV Vault\" remote -v)",
       "Bash(git -C \"f:/My RV Vault\" status --short)",
       "Bash(xargs grep -l \"imageUrl\")",
-      "Bash(ls -la .env*)"
+      "Bash(ls -la .env*)",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/vite build:*)"
     ]
   }
 }

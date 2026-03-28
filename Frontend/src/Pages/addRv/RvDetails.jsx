@@ -217,14 +217,19 @@ const RvDetails = () => {
                 <div className="py-2.5 border-b border-gray-100">
                   <p className="text-gray-500 text-sm mb-2">House Systems</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {rv.houseSystems.map((s) => (
-                      <span
-                        key={s}
-                        className="text-xs bg-[#F9B038]/10 text-[#c97d00] font-medium px-2.5 py-1 rounded-full"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                    {rv.houseSystems.map((s, i) => {
+                      const label = typeof s === "string"
+                        ? s
+                        : `${s.type}${s.location ? ` (${s.location})` : ""}`;
+                      return (
+                        <span
+                          key={i}
+                          className="text-xs bg-[#F9B038]/10 text-[#c97d00] font-medium px-2.5 py-1 rounded-full"
+                        >
+                          {label}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
