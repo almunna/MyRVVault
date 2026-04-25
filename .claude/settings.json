@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"cd /d \\\\\"f:\\\\My RV Vault\\\\\" && dir Frontend\\\\src /b\")",
+      "Bash(cmd.exe /c \"dir \\\\\"f:\\\\My RV Vault\\\\Frontend\\\\src\\\\\" /b 2>&1\")"
+    ]
+  }
+}

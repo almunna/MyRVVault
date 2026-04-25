@@ -77,18 +77,12 @@ class QueryBuilder {
       ref = ref.where(key, '==', value);
     }
 
-    // Apply date range via Firestore where()
+    // Date range: only use Firestore orderBy when it's the sole filter to avoid composite index requirement
     if (this._fromDate && this._toDate) {
       ref = ref
+        .orderBy(this._dateField)
         .where(this._dateField, '>=', this._fromDate)
         .where(this._dateField, '<=', this._toDate);
-    }
-
-    // Apply Firestore sort
-    try {
-      ref = ref.orderBy(this._sortField, this._sortDir);
-    } catch (_) {
-      ref = ref.orderBy('createdAt', 'desc');
     }
 
     const snap = await ref.get();
@@ -104,6 +98,15 @@ class QueryBuilder {
         })
       );
     }
+
+    // JS-side sort (avoids composite index requirement on Firestore)
+    docs.sort((a, b) => {
+      const av = a[this._sortField] ?? '';
+      const bv = b[this._sortField] ?? '';
+      if (av < bv) return this._sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return this._sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
 
     const total = docs.length;
     const skip = (this._page - 1) * this._limit;

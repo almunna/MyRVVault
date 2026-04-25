@@ -29,8 +29,13 @@ exports.createMaintenanceSchedule = asyncHandler(async (req, res) => {
     const hasAccess = await checkRvOwnership(userId, rvId);
     if (!hasAccess) throw new ApiError('You do not have permission to add maintenance for this RV', 403);
 
+    const images = req.files ? req.files.map(f => f.location) : [];
+
     const data = {
         ...req.body,
+        images,
+        cost: req.body.cost ? Number(req.body.cost) : null,
+        hoursAtMaintenance: req.body.hoursAtMaintenance ? Number(req.body.hoursAtMaintenance) : null,
         user: userId,
         rvId,
         isCompleted: false,
@@ -252,7 +257,18 @@ exports.updateMaintenanceSchedule = asyncHandler(async (req, res) => {
         if (!hasAccess) throw new ApiError('You do not have permission to assign maintenance to this RV', 403);
     }
 
-    await col().doc(req.params.id).update({ ...req.body, updatedAt: FieldValue.serverTimestamp() });
+    const updates = { ...req.body, updatedAt: FieldValue.serverTimestamp() };
+
+    if (req.body.cost !== undefined) updates.cost = req.body.cost ? Number(req.body.cost) : null;
+    if (req.body.hoursAtMaintenance !== undefined) updates.hoursAtMaintenance = req.body.hoursAtMaintenance ? Number(req.body.hoursAtMaintenance) : null;
+
+    // Append new images if uploaded
+    if (req.files && req.files.length > 0) {
+        const newImages = req.files.map(f => f.location);
+        updates.images = [...(existingSchedule.images || []), ...newImages];
+    }
+
+    await col().doc(req.params.id).update(updates);
     const maintenanceSchedule = docToObj(await col().doc(req.params.id).get());
 
     if (req.body.rvId && req.body.rvId !== existingSchedule.rvId) {

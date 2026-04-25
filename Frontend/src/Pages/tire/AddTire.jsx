@@ -63,7 +63,7 @@ const AddTire = () => {
 
   const handleSubmit = async (values) => {
     console.log("Form Values:", values?.cost);
-    const rvId = profileData?.user?.selectedRvId?._id;
+    const rvId = profileData?.user?.selectedRvId?.id;
 
     if (!rvId) {
       message.error(

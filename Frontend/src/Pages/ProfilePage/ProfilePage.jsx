@@ -4,6 +4,7 @@ import { CiEdit } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 
 import { ChangePass } from "./ChangePass";
+import NotificationPreferences from "./NotificationPreferences";
 import { useGetProfileQuery, useUpdateProfileMutation } from "../redux/api/userApi";
 import { imageUrl } from "../redux/api/baseApi";
 
@@ -129,6 +130,15 @@ const ProfilePage = () => {
           >
             Change Password
           </p>
+          <p
+            onClick={() => handlePageChange("Notifications")}
+            className={`${tab === "Notifications"
+                ? "border-white border-b-2 font-bold text-white "
+                : "border-b-2 border-transparent font-normal text-white"
+              } pb-2 cursor-pointer text-base leading-[18px]`}
+          >
+            Notifications
+          </p>
         </div>
 
         <div className="max-w-xl m-auto px-4">
@@ -234,6 +244,13 @@ const ProfilePage = () => {
                     </Button>
                   </Form.Item>
                 </Form>
+              </div>
+            ) : tab === "Notifications" ? (
+              <div className="max-w-xl mx-auto py-4">
+                <h1 className="text-center text-white text-2xl font-semibold mb-6">
+                  Notification Preferences
+                </h1>
+                <NotificationPreferences />
               </div>
             ) : (
               <div className="max-w-[481px] mx-auto rounded-lg md:p-6">

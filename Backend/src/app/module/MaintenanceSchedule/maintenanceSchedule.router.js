@@ -13,10 +13,10 @@ const {
 const upload = require('../../../utils/uploadConfig');
 const { authenticateUser } = require('../../middleware/auth.middleware');
 
-router.post('/create', authenticateUser, createMaintenanceSchedule);
+router.post('/create', authenticateUser, upload.array('images', 5), createMaintenanceSchedule);
 router.get('/get', authenticateUser, getMaintenanceSchedule);
 router.get('/get/:id', authenticateUser, getMaintenanceScheduleById);
-router.put('/update/:id', authenticateUser, updateMaintenanceSchedule);
+router.put('/update/:id', authenticateUser, upload.array('images', 5), updateMaintenanceSchedule);
 router.post('/delete/:id', authenticateUser, deleteMaintenanceSchedule);
 router.get('/status/:status', authenticateUser, getMaintenanceByStatus);
 router.get('/dashboard', authenticateUser, getMaintenanceDashboard);

@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const { getUserProfile, updateUserProfile, changePassword, deleteAccount, selectRV, sellRv, getSoldRvs } = require('./user.controller');
+const { getUserProfile, updateUserProfile, changePassword, deleteAccount, selectRV, sellRv, getSoldRvs, updateNotificationPreferences } = require('./user.controller');
 const upload = require('../../../utils/uploadConfig');
 const { authenticateUser } = require('../../middleware/auth.middleware');
 
@@ -17,5 +17,6 @@ router.post('/delete-account', authenticateUser, deleteAccount);
 router.put('/select-rv', authenticateUser, selectRV);
 router.post('/sell-rv', authenticateUser, sellRv);
 router.get('/sold-rvs', authenticateUser, getSoldRvs);
+router.put('/notification-preferences', authenticateUser, updateNotificationPreferences);
 
 module.exports = router;

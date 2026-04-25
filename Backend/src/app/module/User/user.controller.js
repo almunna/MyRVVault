@@ -146,6 +146,20 @@ exports.sellRv = asyncHandler(async (req, res) => {
   return res.status(200).json({ success: true, message: 'RV sold successfully', soldRv: soldEntry });
 });
 
+exports.updateNotificationPreferences = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const allowed = ['maintenance', 'repairOrders', 'mpgAlerts', 'tripReminders', 'warrantyExpiry', 'generatorService'];
+  const prefs = {};
+  allowed.forEach(key => {
+    if (req.body[key] !== undefined) prefs[key] = Boolean(req.body[key]);
+  });
+  await db.collection('users').doc(userId).update({
+    notificationPreferences: prefs,
+    updatedAt: FieldValue.serverTimestamp()
+  });
+  return res.status(200).json({ success: true, message: 'Notification preferences updated', notificationPreferences: prefs });
+});
+
 exports.getSoldRvs = asyncHandler(async (req, res) => {
   const userDoc = await db.collection('users').doc(req.user.id).get();
   if (!userDoc.exists) throw new ApiError('User not found', 404);

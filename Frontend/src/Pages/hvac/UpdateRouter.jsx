@@ -58,7 +58,7 @@ const UpdateRouter = () => {
   };
   const handleSubmit = async (values) => {
     const formData = new FormData();
-    const rvId = profileData?.user?.selectedRvId?._id;
+    const rvId = profileData?.user?.selectedRvId?.id;
 
     if (!rvId) {
       message.error(

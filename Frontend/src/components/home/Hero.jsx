@@ -62,20 +62,14 @@ const Hero = () => {
     ? "Upcoming"
     : "All Good";
 
-  // Safely extract maintenance array regardless of response shape
-  const maintArray = Array.isArray(maintData)
-    ? maintData
-    : Array.isArray(maintData?.data)
-    ? maintData.data
-    : [];
-
-  // Get upcoming maintenance items (max 3)
-  const upcomingItems = maintArray
-    .filter((item) => item.status !== "completed")
-    .slice(0, 3);
-
-  const hasMoreThan3 =
-    maintArray.filter((item) => item.status !== "completed").length > 3;
+  // Dashboard response shape: { data: { overdue: [], upcoming: [], scheduled: [], completed: [] } }
+  const overdueItems = (maintData?.data?.overdue || []).slice(0, 3);
+  const upcomingItems = (maintData?.data?.upcoming || []).slice(0, 3);
+  const totalNonCompleted =
+    (maintData?.data?.overdue?.length || 0) +
+    (maintData?.data?.upcoming?.length || 0) +
+    (maintData?.data?.scheduled?.length || 0);
+  const hasMoreThan3 = totalNonCompleted > 3;
 
   const handleDelete = async (id) => {
     try {
@@ -264,46 +258,6 @@ const Hero = () => {
                     </Link>
                   </div>
 
-                  {upcomingItems.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#E8F0E8] p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-[#1A1A1A] flex items-center gap-2">
-                          <FaCalendarAlt className="text-[#D4872D]" />
-                          Upcoming Maintenance
-                        </p>
-                        {hasMoreThan3 && (
-                          <Link to="/newMaintenance" className="text-xs text-[#3B7D3C] font-medium hover:underline">
-                            View All
-                          </Link>
-                        )}
-                      </div>
-                      <ul className="space-y-2">
-                        {upcomingItems.map((item, i) => (
-                          <li
-                            key={item._id || i}
-                            className="flex items-center justify-between p-2.5 rounded-lg bg-[#F5F5F0] hover:bg-[#E8F0E8] cursor-pointer transition-colors duration-200"
-                            onClick={() => handleMaintItemClick(item)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <FaWrench className="text-[#D4872D] text-xs flex-shrink-0" />
-                              <span className="text-sm text-[#1A1A1A] font-medium">
-                                {item.component || item.maintenanceToBePerformed || "Service"}
-                              </span>
-                            </div>
-                            <span className="text-xs text-[#5A5A5A] whitespace-nowrap ml-2">
-                              {item.daysUntilDue
-                                ? `Due in ${item.daysUntilDue} days`
-                                : item.nextMaintenanceDate
-                                ? new Date(item.nextMaintenanceDate).toLocaleDateString()
-                                : item.nextMaintenanceMileage
-                                ? `Due at ${Number(item.nextMaintenanceMileage).toLocaleString()} mi`
-                                : ""}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -324,9 +278,9 @@ const Hero = () => {
                   </>
                 ) : (
                   <div className="flex flex-wrap justify-center lg:justify-start gap-3">
-                    <Link to="/addNewRepair">
+                    <Link to="/repairOrders">
                       <button className="bg-[#D4872D] text-white py-3 px-6 rounded-lg text-sm font-semibold hover:bg-[#B8721F] transition-colors duration-300 shadow-sm">
-                        New Repair
+                        Repair Orders
                       </button>
                     </Link>
                     <Link to="/checklist">
@@ -474,6 +428,106 @@ const Hero = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Maintenance Alert Strip (logged-in only) ── */}
+      {token && (overdueItems.length > 0 || upcomingItems.length > 0) && (
+        <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-[#1A1A1A] flex items-center gap-2">
+              <FaWrench className="text-[#D4872D]" />
+              Maintenance Alerts
+            </h2>
+            <Link to="/newMaintenance" className="text-sm text-[#3B7D3C] font-medium hover:underline">
+              View all →
+            </Link>
+          </div>
+
+          <div className={`grid gap-4 ${overdueItems.length > 0 && upcomingItems.length > 0 ? "md:grid-cols-2" : "grid-cols-1"}`}>
+
+            {/* Overdue card */}
+            {overdueItems.length > 0 && (
+              <div className="bg-white border border-red-200 rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-bold text-red-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 inline-block animate-pulse" />
+                  Overdue · {maintData?.data?.overdue?.length || 0} item{(maintData?.data?.overdue?.length || 0) !== 1 ? "s" : ""}
+                </p>
+                <ul className="space-y-2">
+                  {overdueItems.map((item, i) => (
+                    <li
+                      key={item.id || i}
+                      className="flex items-center justify-between p-3 rounded-xl bg-red-50 hover:bg-red-100 cursor-pointer transition-colors duration-200 group"
+                      onClick={() => handleMaintItemClick(item)}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                          <FaWrench className="text-red-400 text-xs" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#1A1A1A] truncate capitalize">
+                            {item.component || "Service"}
+                          </p>
+                          {item.maintenanceToBePerformed && (
+                            <p className="text-xs text-[#5A5A5A] truncate">{item.maintenanceToBePerformed}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-red-500 font-semibold whitespace-nowrap ml-3 bg-red-100 px-2 py-0.5 rounded-full">
+                        {item.nextMaintenanceDate
+                          ? new Date(item.nextMaintenanceDate).toLocaleDateString()
+                          : item.nextMaintenanceMileage
+                          ? `${Number(item.nextMaintenanceMileage).toLocaleString()} mi`
+                          : "Overdue"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Upcoming card */}
+            {upcomingItems.length > 0 && (
+              <div className="bg-white border border-amber-200 rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                  Upcoming · {maintData?.data?.upcoming?.length || 0} item{(maintData?.data?.upcoming?.length || 0) !== 1 ? "s" : ""}
+                </p>
+                <ul className="space-y-2">
+                  {upcomingItems.map((item, i) => (
+                    <li
+                      key={item.id || i}
+                      className="flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 cursor-pointer transition-colors duration-200"
+                      onClick={() => handleMaintItemClick(item)}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                          <FaCalendarAlt className="text-amber-500 text-xs" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#1A1A1A] truncate capitalize">
+                            {item.component || "Service"}
+                          </p>
+                          {item.maintenanceToBePerformed && (
+                            <p className="text-xs text-[#5A5A5A] truncate">{item.maintenanceToBePerformed}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-amber-600 font-semibold whitespace-nowrap ml-3 bg-amber-100 px-2 py-0.5 rounded-full">
+                        {item.daysUntilDue
+                          ? `In ${item.daysUntilDue}d`
+                          : item.nextMaintenanceDate
+                          ? new Date(item.nextMaintenanceDate).toLocaleDateString()
+                          : item.nextMaintenanceMileage
+                          ? `At ${Number(item.nextMaintenanceMileage).toLocaleString()} mi`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Non-logged-in section title ── */}
       {!token && (

@@ -65,7 +65,7 @@ const Add = () => {
   };
   const {data:profileData} = useGetProfileQuery();
   const handleSubmit = async (values) => {
-  const rvId = profileData?.user?.selectedRvId?._id;
+  const rvId = profileData?.user?.selectedRvId?.id;
 
   if (!rvId) {
     message.error("Please select your RV from the home page before submitting.");

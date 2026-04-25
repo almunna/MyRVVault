@@ -1552,6 +1552,151 @@ updateMileago: builder.mutation({
     //     },
     //     invalidatesTags: ["terms"],
     // }),
+
+    // ── Fuel Logs ──────────────────────────────────────────────────────────
+    addFuelLog: builder.mutation({
+      query: (data) => ({ url: "/fuel/create", method: "POST", body: data }),
+      invalidatesTags: ["terms"],
+    }),
+    getFuelLogs: builder.query({
+      query: () => ({ url: "/fuel/get", method: "GET" }),
+      providesTags: ["terms"],
+    }),
+    getFuelStats: builder.query({
+      query: () => ({ url: "/fuel/stats", method: "GET" }),
+      providesTags: ["terms"],
+    }),
+    getSingleFuelLog: builder.query({
+      query: ({ id }) => ({ url: `/fuel/get/${id}`, method: "GET" }),
+      providesTags: ["terms"],
+    }),
+    updateFuelLog: builder.mutation({
+      query: ({ id, data }) => ({ url: `/fuel/update/${id}`, method: "PUT", body: data }),
+      invalidatesTags: ["terms"],
+    }),
+    deleteFuelLog: builder.mutation({
+      query: (id) => ({ url: `/fuel/delete/${id}`, method: "POST" }),
+      invalidatesTags: ["terms"],
+    }),
+
+    // ── Generator Logs ─────────────────────────────────────────────────────
+    addGeneratorLog: builder.mutation({
+      query: (data) => ({ url: "/generator-log/create", method: "POST", body: data }),
+      invalidatesTags: ["terms"],
+    }),
+    getGeneratorLogs: builder.query({
+      query: () => ({ url: "/generator-log/get", method: "GET" }),
+      providesTags: ["terms"],
+    }),
+    getSingleGeneratorLog: builder.query({
+      query: ({ id }) => ({ url: `/generator-log/get/${id}`, method: "GET" }),
+      providesTags: ["terms"],
+    }),
+    updateGeneratorLog: builder.mutation({
+      query: ({ id, data }) => ({ url: `/generator-log/update/${id}`, method: "PUT", body: data }),
+      invalidatesTags: ["terms"],
+    }),
+    deleteGeneratorLog: builder.mutation({
+      query: (id) => ({ url: `/generator-log/delete/${id}`, method: "POST" }),
+      invalidatesTags: ["terms"],
+    }),
+
+    // ── Repair Orders ──────────────────────────────────────────────────────
+    addRepairOrder: builder.mutation({
+      query: (formData) => ({ url: "/repair-order/create", method: "POST", body: formData }),
+      invalidatesTags: ["repairOrders"],
+    }),
+    getRepairOrders: builder.query({
+      query: () => ({ url: "/repair-order/get", method: "GET" }),
+      providesTags: ["repairOrders"],
+    }),
+    getSingleRepairOrder: builder.query({
+      query: ({ id }) => ({ url: `/repair-order/get/${id}`, method: "GET" }),
+      providesTags: ["repairOrders"],
+    }),
+    updateRepairOrder: builder.mutation({
+      query: ({ id, formData }) => ({ url: `/repair-order/update/${id}`, method: "PUT", body: formData }),
+      invalidatesTags: ["repairOrders"],
+    }),
+    deleteRepairOrder: builder.mutation({
+      query: (id) => ({ url: `/repair-order/delete/${id}`, method: "POST" }),
+      invalidatesTags: ["repairOrders"],
+    }),
+    updateRepairOrderStatus: builder.mutation({
+      query: ({ id, status, note }) => ({ url: `/repair-order/status/${id}`, method: "PUT", body: { status, note } }),
+      invalidatesTags: ["repairOrders"],
+    }),
+
+    // ── Smart Suggestions ──────────────────────────────────────────────────
+    getSmartSuggestions: builder.query({
+      query: () => ({ url: "/smart-suggestions/get", method: "GET" }),
+      providesTags: ["terms"],
+    }),
+
+    // ── Notifications ──────────────────────────────────────────────────────
+    getNotifications: builder.query({
+      query: ({ page = 1, limit = 20 } = {}) => ({ url: `/notifications/get?page=${page}&limit=${limit}`, method: "GET" }),
+      providesTags: ["notifications"],
+    }),
+    getUnreadCount: builder.query({
+      query: () => ({ url: "/notifications/unread-count", method: "GET" }),
+      providesTags: ["notifications"],
+    }),
+    markNotificationAsRead: builder.mutation({
+      query: (id) => ({ url: `/notifications/read/${id}`, method: "PUT" }),
+      invalidatesTags: ["notifications"],
+    }),
+    markAllNotificationsAsRead: builder.mutation({
+      query: () => ({ url: "/notifications/read-all", method: "PUT" }),
+      invalidatesTags: ["notifications"],
+    }),
+    deleteNotification: builder.mutation({
+      query: (id) => ({ url: `/notifications/delete/${id}`, method: "DELETE" }),
+      invalidatesTags: ["notifications"],
+    }),
+    clearAllNotifications: builder.mutation({
+      query: () => ({ url: "/notifications/clear-all", method: "DELETE" }),
+      invalidatesTags: ["notifications"],
+    }),
+    generateNotifications: builder.mutation({
+      query: () => ({ url: "/notifications/generate", method: "POST" }),
+      invalidatesTags: ["notifications"],
+    }),
+    updateNotificationPreferences: builder.mutation({
+      query: (prefs) => ({ url: "/user/notification-preferences", method: "PUT", body: prefs }),
+      invalidatesTags: ["terms"],
+    }),
+
+    // ── Generic Component endpoints (work for ANY appliance collection) ─────
+    // query: type key (e.g. "airConditioner") — resolved to URL via COMPONENT_URL_MAP
+    getComponents: builder.query({
+      query: (urlPath) => ({ url: `/${urlPath}/get`, method: "GET" }),
+      providesTags: ["components"],
+    }),
+    getSingleComponent: builder.query({
+      query: ({ urlPath, id }) => ({ url: `/${urlPath}/get/${id}`, method: "GET" }),
+      providesTags: ["components"],
+    }),
+    addComponent: builder.mutation({
+      query: ({ urlPath, data }) => ({ url: `/${urlPath}/create`, method: "POST", body: data }),
+      invalidatesTags: ["components", "terms"],
+    }),
+    updateComponent: builder.mutation({
+      query: ({ urlPath, id, data }) => ({ url: `/${urlPath}/update/${id}`, method: "PUT", body: data }),
+      invalidatesTags: ["components", "terms"],
+    }),
+    deleteComponent: builder.mutation({
+      query: ({ urlPath, id }) => ({ url: `/${urlPath}/delete/${id}`, method: "POST" }),
+      invalidatesTags: ["components", "terms"],
+    }),
+    markComponentReplaced: builder.mutation({
+      query: ({ collection, id, data }) => ({
+        url: `/component/replace/${collection}/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["components", "terms"],
+    }),
   }),
 });
 
@@ -1695,4 +1840,22 @@ export const {
   useGetSingleExpenseQuery,
   useUpdateExpenseMutation,
   useAddCampMutation,useDeleteCampMutation,useGetCampQuery,useGetSingleCampQuery,useUpdateCampMutation,useUpdateMileagoMutation,useUpdateSelectRvMutation,
+  useAddFuelLogMutation,useGetFuelLogsQuery,useGetFuelStatsQuery,useGetSingleFuelLogQuery,useUpdateFuelLogMutation,useDeleteFuelLogMutation,
+  useAddGeneratorLogMutation,useGetGeneratorLogsQuery,useGetSingleGeneratorLogQuery,useUpdateGeneratorLogMutation,useDeleteGeneratorLogMutation,
+  useAddRepairOrderMutation,useGetRepairOrdersQuery,useGetSingleRepairOrderQuery,useUpdateRepairOrderMutation,useDeleteRepairOrderMutation,useUpdateRepairOrderStatusMutation,
+  useGetSmartSuggestionsQuery,
+  useGetComponentsQuery,
+  useGetSingleComponentQuery,
+  useAddComponentMutation,
+  useUpdateComponentMutation,
+  useDeleteComponentMutation,
+  useMarkComponentReplacedMutation,
+  useGetNotificationsQuery,
+  useGetUnreadCountQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
+  useDeleteNotificationMutation,
+  useClearAllNotificationsMutation,
+  useGenerateNotificationsMutation,
+  useUpdateNotificationPreferencesMutation,
 } = routesApi;

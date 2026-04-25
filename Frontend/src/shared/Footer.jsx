@@ -40,27 +40,26 @@ const FooterSection = ({ title, links }) => {
 
 export const Footer = () => {
   const maintenanceLinks = [
-    { label: "Upcoming Maintenance", to: "/newMaintenance" },
-    { label: "Past Due Maintenance", to: "/maintenanceOverdue" },
-    { label: "Completed Maintenance", to: "/newMaintenance" },
-    { label: "All Components", to: "/havcApplication" },
-    { label: "Add Maintenance", to: "/AddNewMaintanceSchedule" },
-    { label: "Maintenance History", to: "/newMaintenance" },
+    { label: "Maintenance Schedule", to: "/newMaintenance" },
+    { label: "Past Due",             to: "/maintenanceOverdue" },
+    { label: "Add Maintenance",      to: "/AddNewMaintanceSchedule" },
+    { label: "Components",           to: "/havcApplication" },
+    { label: "Generator Hours",      to: "/generatorLog" },
+    { label: "Smart Suggestions",    to: "/smartSuggestions" },
   ];
 
   const repairLinks = [
-    { label: "Repair History", to: "/newRepair" },
-    { label: "Work Orders", to: "/newRepair" },
-    { label: "Add Repair", to: "/addNewRepair" },
-    { label: "Warranty Tracking", to: "/newRepair" },
+    { label: "All Repair Orders",  to: "/repairOrders" },
+    { label: "Add Repair Order",   to: "/addRepairOrder" },
+    { label: "Component Warranty", to: "/havcApplication" },
+    { label: "Smart Suggestions",  to: "/smartSuggestions" },
   ];
 
   const expenseLinks = [
-    { label: "Add Expense", to: "/addNewExpense" },
-    { label: "Expense History", to: "/newExpense" },
-    { label: "Fuel Logs", to: "/newExpense" },
-    { label: "Campground Fees", to: "/newExpense" },
-    { label: "Trip Expenses", to: "/newExpense" },
+    { label: "Add Expense",      to: "/addNewExpense" },
+    { label: "Expense History",  to: "/newExpense" },
+    { label: "Fuel Log",         to: "/fuelList" },
+    { label: "Add Fuel Entry",   to: "/addFuel" },
   ];
 
   const tripLinks = [

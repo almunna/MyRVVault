@@ -128,6 +128,20 @@ import ProtectedRoute from "../ProtectedRoute";
 import OverDue from "../Pages/newMaintenace/OverDue";
 import ChessisProtect from "../ChessisProtect";
 import MyRv from "../Pages/addRv/MyRv";
+import FuelList from "../Pages/fuel/FuelList";
+import AddFuel from "../Pages/fuel/AddFuel";
+import UpdateFuel from "../Pages/fuel/UpdateFuel";
+import GeneratorLogList from "../Pages/generatorLog/GeneratorLogList";
+import AddGeneratorLog from "../Pages/generatorLog/AddGeneratorLog";
+import UpdateGeneratorLog from "../Pages/generatorLog/UpdateGeneratorLog";
+import RepairOrderList from "../Pages/repairOrder/RepairOrderList";
+import AddRepairOrder from "../Pages/repairOrder/AddRepairOrder";
+import UpdateRepairOrderNew from "../Pages/repairOrder/UpdateRepairOrder";
+import SmartSuggestions from "../Pages/smartSuggestions/SmartSuggestions";
+import ComponentsList from "../Pages/hvac/ComponentsList";
+import ComponentAdd from "../Pages/hvac/ComponentAdd";
+import ComponentUpdate from "../Pages/hvac/ComponentUpdate";
+import NotificationCenter from "../Pages/notifications/NotificationCenter";
 
 export const router = createBrowserRouter([
   {
@@ -867,6 +881,25 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+
+      { path: "/fuelList", element: <ProtectedRoute><FuelList /></ProtectedRoute> },
+      { path: "/addFuel", element: <ProtectedRoute><AddFuel /></ProtectedRoute> },
+      { path: "/updateFuel/:id", element: <ProtectedRoute><UpdateFuel /></ProtectedRoute> },
+
+      { path: "/generatorLog", element: <ProtectedRoute><GeneratorLogList /></ProtectedRoute> },
+      { path: "/addGeneratorLog", element: <ProtectedRoute><AddGeneratorLog /></ProtectedRoute> },
+      { path: "/updateGeneratorLog/:id", element: <ProtectedRoute><UpdateGeneratorLog /></ProtectedRoute> },
+
+      { path: "/repairOrders", element: <ProtectedRoute><RepairOrderList /></ProtectedRoute> },
+      { path: "/addRepairOrder", element: <ProtectedRoute><AddRepairOrder /></ProtectedRoute> },
+      { path: "/updateRepairOrder/:id", element: <ProtectedRoute><UpdateRepairOrderNew /></ProtectedRoute> },
+
+      { path: "/smartSuggestions", element: <ProtectedRoute><SmartSuggestions /></ProtectedRoute> },
+      { path: "/notifications",    element: <ProtectedRoute><NotificationCenter /></ProtectedRoute> },
+
+      { path: "/components/:type", element: <ProtectedRoute><ComponentsList /></ProtectedRoute> },
+      { path: "/components/:type/add", element: <ProtectedRoute><ComponentAdd /></ProtectedRoute> },
+      { path: "/components/:type/update/:id", element: <ProtectedRoute><ComponentUpdate /></ProtectedRoute> },
     ],
   },
   {

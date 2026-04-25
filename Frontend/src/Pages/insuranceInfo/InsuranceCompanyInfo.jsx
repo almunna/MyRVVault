@@ -66,7 +66,7 @@ const InsuranceCompanyInfo = () => {
     form.setFieldsValue({ cost: onlyNumbers });
   };
   const handleSubmit = async (values) => {
-    const rvId = profileData?.user?.selectedRvId?._id;
+    const rvId = profileData?.user?.selectedRvId?.id;
 
     if (!rvId) {
       message.error(

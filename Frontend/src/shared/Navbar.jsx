@@ -4,6 +4,7 @@ import { Drawer, Dropdown } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { useGetProfileQuery } from "../Pages/redux/api/userApi";
 import logo from "../assets/Home/hero.png";
+import NotificationBell from "../components/notifications/NotificationBell";
 
 // ── Hamburger drawer section (small screens) ─────────────────────────────────
 const NavSection = ({ title, items, onClose }) => {
@@ -87,7 +88,15 @@ export const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const { data: profileData } = useGetProfileQuery(undefined, { skip: !token });
+  const { data: profileData, error: profileError } = useGetProfileQuery(undefined, { skip: !token });
+
+  // If the stored token is rejected by the server (expired/invalid), clear it
+  useEffect(() => {
+    if (profileError?.status === 401) {
+      localStorage.removeItem('accessToken');
+      setToken(null);
+    }
+  }, [profileError]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -109,15 +118,19 @@ export const Navbar = () => {
   const vaultItems = [
     { label: "Insurance", to: "/insuranceInfo" },
     { label: "Memberships", to: "/addMembership" },
+    { label: "Repair Orders", to: "/repairOrders" },
     { label: "Roadside Assistance", to: "/insuranceInfo" },
-    { label: "Warranty Documents", to: "/newRepair" },
+    { label: "Warranty Documents", to: "/repairOrders" },
     { label: "Registration / Title", to: "/myRv" },
   ];
 
   const toolsItems = [
+    { label: "Smart Suggestions", to: "/smartSuggestions" },
     { label: "Reports", to: "/reports" },
     { label: "Checklists", to: "/checklist" },
     { label: "Campground Reviews", to: "/campgroundReview" },
+    { label: "Fuel Log", to: "/fuelList" },
+    { label: "Generator Hours", to: "/generatorLog" },
     { label: "Export Data", to: "/reports" },
   ];
 
@@ -184,6 +197,7 @@ export const Navbar = () => {
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-3">
+                <NotificationBell />
                 <Link to="/profilePage" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
                   {profileData?.user?.profilePic ? (
                     <img

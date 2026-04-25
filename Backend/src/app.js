@@ -79,6 +79,12 @@ app.use('/api/manage', require('./app/module/Manage/manage.router'));
 app.use('/api/admin', require('./app/module/Admin/admin.router'));
 app.use('/api/trips', require('./app/module/Trip/trip.router'));
 app.use('/api/sell-rv', require('./app/module/SellRv/sellRv.router'));
+app.use('/api/fuel', require('./app/module/Fuel/fuel.router'));
+app.use('/api/generator-log', require('./app/module/GeneratorLog/generatorLog.router'));
+app.use('/api/repair-order', require('./app/module/RepairOrder/repairOrder.router'));
+app.use('/api/smart-suggestions', require('./app/module/SmartSuggestions/smartSuggestions.router'));
+app.use('/api/component', require('./app/module/Component/component.router'));
+app.use('/api/notifications', require('./app/module/Notification/notification.router'));
 
 app.get('/', (req, res) => {
   res.send("All ok")
