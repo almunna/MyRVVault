@@ -1,4 +1,4 @@
-import { Form, Input, message, DatePicker, Spin, Select } from "antd";
+import { Form, Input, message, DatePicker, Spin, Select, Image } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -8,6 +8,9 @@ import {
   DollarOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
+  CloseCircleFilled,
+  SyncOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
 import { Upload } from "antd";
 import {
@@ -18,6 +21,12 @@ import dayjs from "dayjs";
 
 const { Dragger } = Upload;
 const dateFormat = "MM/DD/YYYY";
+
+const MULTI_INSTANCE_COMPONENTS = [
+  "airConditioning", "heater", "exhaustFans", "ventFans", "ceilingFans",
+  "tv", "waterHeater", "waterPump", "tire", "toilet",
+];
+const UNIT_SUGGESTIONS = ["Front", "Rear", "Bedroom", "Living Room", "Master", "Upper", "Lower"];
 
 const fieldLabel = (text) => (
   <span className="text-sm font-medium text-[#5A5A5A]">{text}</span>
@@ -47,6 +56,8 @@ const UpdateMaintanceSchedule = () => {
   const [isFormFilled, setIsFormFilled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [selectedComponent, setSelectedComponent] = useState(null);
 
   useEffect(() => { handleFormChange(); }, []);
 
@@ -72,14 +83,20 @@ const UpdateMaintanceSchedule = () => {
   useEffect(() => {
     if (singleData?.data) {
       const d = singleData.data;
+      setExistingImages(d.images || []);
+      setSelectedComponent(d.component || null);
       form.setFieldsValue({
         component: d.component || undefined,
+        componentInstance: d.componentInstance || "",
         maintenanceToBePerformed: d.maintenanceToBePerformed || "",
         dateOfMaintenance: d.dateOfMaintenance ? dayjs(d.dateOfMaintenance) : null,
         milage: d.initialMilage ? String(d.initialMilage) : "",
         cost_amount: d.cost ? String(d.cost) : "",
+        vendor: d.vendor || "",
         hoursAtMaintenance: d.hoursAtMaintenance ? String(d.hoursAtMaintenance) : "",
         notes: d.notes || "",
+        recurringMiles: d.recurringMiles ? String(d.recurringMiles) : "",
+        recurringMonths: d.recurringMonths ? String(d.recurringMonths) : "",
       });
       setIsFormFilled(true);
     }
@@ -90,13 +107,18 @@ const UpdateMaintanceSchedule = () => {
     try {
       const formData = new FormData();
       if (values.component)                formData.append("component", values.component);
+      if (values.componentInstance)        formData.append("componentInstance", values.componentInstance);
       if (values.milage)                   formData.append("initialMilage", parseNumber(values.milage));
       if (values.maintenanceToBePerformed) formData.append("maintenanceToBePerformed", values.maintenanceToBePerformed);
       if (values.dateOfMaintenance)        formData.append("dateOfMaintenance", values.dateOfMaintenance.toISOString());
       if (values.notes)                    formData.append("notes", values.notes);
       if (values.cost_amount)              formData.append("cost", parseNumber(values.cost_amount));
+      if (values.vendor)                   formData.append("vendor", values.vendor);
       if (values.hoursAtMaintenance)       formData.append("hoursAtMaintenance", values.hoursAtMaintenance);
+      if (values.recurringMiles)           formData.append("recurringMiles", values.recurringMiles);
+      if (values.recurringMonths)          formData.append("recurringMonths", values.recurringMonths);
 
+      formData.append("keepImages", JSON.stringify(existingImages));
       fileList.forEach((file) => {
         if (file.originFileObj) formData.append("images", file.originFileObj);
       });
@@ -138,6 +160,7 @@ const UpdateMaintanceSchedule = () => {
                   placeholder="Select Component"
                   size="large"
                   className="w-full"
+                  onChange={(val) => setSelectedComponent(val)}
                 >
                   <Select.Option value="chassis">Chassis</Select.Option>
                   <Select.Option value="ceilingFans">Ceiling Fans</Select.Option>
@@ -165,6 +188,27 @@ const UpdateMaintanceSchedule = () => {
                   <Select.Option value="wifiRouter">WiFi Router</Select.Option>
                 </Select>
               </Form.Item>
+
+              {/* Specific unit selector for multi-instance components */}
+              {selectedComponent && MULTI_INSTANCE_COMPONENTS.includes(selectedComponent) && (
+                <div className="mb-4">
+                  <Form.Item label={fieldLabel("Specific Unit (optional)")} name="componentInstance" className="mb-1">
+                    <Input size="large" placeholder="e.g. Front, Rear, Bedroom…" className={inputClass} />
+                  </Form.Item>
+                  <div className="flex flex-wrap gap-1.5">
+                    {UNIT_SUGGESTIONS.map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => form.setFieldValue("componentInstance", unit)}
+                        className="text-xs px-2.5 py-1 rounded-full bg-[#F5F5F0] border border-[#E0E0E0] text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all"
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <Form.Item label={fieldLabel("Maintenance to be Performed")} name="maintenanceToBePerformed" className="mb-0">
                 <Input size="large" placeholder="e.g. Oil change, tire rotation…" className={inputClass} />
@@ -211,11 +255,40 @@ const UpdateMaintanceSchedule = () => {
               </div>
             </Card>
 
-            {/* Card 3 — Cost & Hours */}
-            <Card icon={<DollarOutlined />} title="Cost & Generator Hours">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 3 — Recurrence */}
+            <Card icon={<SyncOutlined />} title="Recurrence (Optional)">
+              <p className="text-xs text-[#5A5A5A] mb-4">
+                Set an interval and the next service auto-schedules when this one is marked complete.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item label={fieldLabel("Every ___ miles")} name="recurringMiles" className="mb-0">
+                  <Input
+                    size="large"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 5000"
+                    suffix={<span className="text-gray-400 text-sm">mi</span>}
+                    className={inputClass}
+                  />
+                </Form.Item>
+                <Form.Item label={fieldLabel("Every ___ months")} name="recurringMonths" className="mb-0">
+                  <Input
+                    size="large"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 6"
+                    suffix={<span className="text-gray-400 text-sm">mo</span>}
+                    className={inputClass}
+                  />
+                </Form.Item>
+              </div>
+            </Card>
+
+            {/* Card 4 — Cost & Repair Info */}
+            <Card icon={<DollarOutlined />} title="Cost & Repair Info">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <Form.Item
-                  label={fieldLabel("Cost ($)")}
+                  label={fieldLabel("Actual Cost ($)")}
                   name="cost_amount"
                   normalize={parseNumber}
                   getValueProps={(v) => ({ value: formatWithCommas(v) })}
@@ -239,6 +312,18 @@ const UpdateMaintanceSchedule = () => {
                   />
                 </Form.Item>
 
+                <Form.Item label={fieldLabel("Repair Shop / Vendor")} name="vendor" className="mb-0">
+                  <Input
+                    size="large"
+                    placeholder="e.g. Camping World, Local Shop…"
+                    prefix={<ShopOutlined className="text-gray-400" />}
+                    className={inputClass}
+                  />
+                </Form.Item>
+              </div>
+
+              {/* Generator Hours — only relevant for generator component */}
+              {selectedComponent === "generator" && (
                 <Form.Item
                   label={fieldLabel("Generator Hours at Service")}
                   name="hoursAtMaintenance"
@@ -263,7 +348,7 @@ const UpdateMaintanceSchedule = () => {
                     className={inputClass}
                   />
                 </Form.Item>
-              </div>
+              )}
             </Card>
 
             {/* Card 4 — Notes */}
@@ -279,6 +364,32 @@ const UpdateMaintanceSchedule = () => {
 
             {/* Card 5 — Photos & Documents */}
             <Card icon={<InboxOutlined />} title="Photos & Documents">
+              {existingImages.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-[#5A5A5A] mb-2">Existing Photos</p>
+                  <Image.PreviewGroup>
+                    <div className="flex gap-2 flex-wrap">
+                      {existingImages.map((url, i) => (
+                        <div key={i} className="relative group">
+                          <Image
+                            src={url}
+                            width={80}
+                            height={80}
+                            style={{ objectFit: "cover", borderRadius: 8 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-2 -right-2 z-10 text-red-500 bg-white rounded-full shadow"
+                          >
+                            <CloseCircleFilled style={{ fontSize: 18 }} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
+                </div>
+              )}
               <Dragger
                 fileList={fileList}
                 onChange={({ fileList: newList }) => setFileList(newList)}
@@ -291,7 +402,7 @@ const UpdateMaintanceSchedule = () => {
                   <p className="mb-2">
                     <InboxOutlined style={{ fontSize: 32, color: "#3B7D3C" }} />
                   </p>
-                  <p className="text-[#1A1A1A] font-medium text-sm">Click or drag files here</p>
+                  <p className="text-[#1A1A1A] font-medium text-sm">Click or drag to add more photos</p>
                   <p className="text-[#5A5A5A] text-xs mt-1">Photos (JPG, PNG) and documents (PDF)</p>
                 </div>
               </Dragger>

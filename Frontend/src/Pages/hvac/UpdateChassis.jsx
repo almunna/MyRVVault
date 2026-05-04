@@ -40,7 +40,7 @@ const FilterList = ({ name, label }) => (
                 name={[fieldName, "partNumber"]}
                 className="col-span-5 mb-0"
               >
-                <Input type="number" placeholder="Enter part number" className={inputClass} />
+                <Input placeholder="Enter part number" className={inputClass} />
               </Form.Item>
               <div className="col-span-2 flex items-center gap-1 pb-1">
                 <button
@@ -114,9 +114,9 @@ const UpdateChassis = () => {
       fuelType: values.FuelType,
       engineModel: values.engineModel || "",
       hp: Number(values.hp) || 0,
-      belt: values.belts?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
-      oilFilter: values.Oil?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
-      fuelFilter: values.Fuel?.map((item) => ({ name: item.beltName, partNo: Number(item.partNumber) })) || [],
+      belt: values.belts?.map((item) => ({ name: item.beltName, partNo: item.partNumber || "" })) || [],
+      oilFilter: values.Oil?.map((item) => ({ name: item.beltName, partNo: item.partNumber || "" })) || [],
+      fuelFilter: values.Fuel?.map((item) => ({ name: item.beltName, partNo: item.partNumber || "" })) || [],
     };
     setLoading(true);
     try {

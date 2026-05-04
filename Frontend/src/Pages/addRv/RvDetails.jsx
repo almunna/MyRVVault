@@ -52,6 +52,14 @@ const Badge = ({ children, color }) => (
   </span>
 );
 
+const getTagAlert = (tagExpirationDate) => {
+  if (!tagExpirationDate) return null;
+  const daysLeft = Math.ceil((new Date(tagExpirationDate) - new Date()) / 86400000);
+  if (daysLeft < 0) return { label: "Tag Expired", color: "#ef4444" };
+  if (daysLeft <= 30) return { label: `Tag expires in ${daysLeft}d`, color: "#f97316" };
+  return null;
+};
+
 const fmtFeet = (decimal) => {
   if (!decimal && decimal !== 0) return null;
   const ft = Math.floor(decimal);
@@ -133,6 +141,10 @@ const RvDetails = () => {
                     {rv.condition}
                   </Badge>
                 )}
+                {(() => {
+                  const alert = getTagAlert(rv.tagExpirationDate);
+                  return alert ? <Badge color={alert.color}>{alert.label}</Badge> : null;
+                })()}
               </div>
             </div>
           </div>
@@ -172,6 +184,20 @@ const RvDetails = () => {
             value={rv.currentMileage ? `${Number(rv.currentMileage).toLocaleString()} mi` : null}
           />
           <InfoRow label="Purchased From" value={rv.purchasedFrom} />
+          <InfoRow label="Tag #" value={rv.tagNumber} />
+          {rv.tagExpirationDate && (() => {
+            const alert = getTagAlert(rv.tagExpirationDate);
+            const dateStr = new Date(rv.tagExpirationDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+            return (
+              <div className="flex justify-between items-start gap-4 py-2.5 border-b border-gray-100">
+                <span className="text-gray-500 text-sm">Tag Expiration</span>
+                <span className={`text-sm font-medium text-right ${alert?.color === "#ef4444" ? "text-red-600" : alert ? "text-orange-500" : "text-gray-900"}`}>
+                  {dateStr}
+                  {alert && <span className="ml-2 text-xs font-semibold" style={{ color: alert.color }}>({alert.label})</span>}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Location */}
           {(rv.city || rv.state || rv.phoneNumber) && (

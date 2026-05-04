@@ -24,14 +24,21 @@ async function getUserNotificationPrefs(userId) {
  */
 async function createNotification(userId, data) {
     try {
-        // Deduplication: skip if same refId already exists unread
+        // Deduplication: skip if same refId was created within the last 24 hours (read or unread)
         if (data.refId) {
             const existing = await db.collection('notifications')
-                .where('userId',  '==', userId)
-                .where('refId',   '==', data.refId)
-                .where('isRead',  '==', false)
+                .where('userId', '==', userId)
+                .where('refId',  '==', data.refId)
                 .get();
-            if (!existing.empty) return null;
+            if (!existing.empty) {
+                const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+                const recent = existing.docs.some(doc => {
+                    const t = doc.data().createdAt;
+                    const ms = t?.toMillis ? t.toMillis() : (t ? new Date(t).getTime() : 0);
+                    return ms > cutoff;
+                });
+                if (recent) return null;
+            }
         }
 
         const doc = {

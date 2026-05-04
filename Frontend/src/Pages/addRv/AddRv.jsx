@@ -443,6 +443,8 @@ const AddRv = () => {
       tireCount:           values.tireCount      ? Number(values.tireCount)                                       : undefined,
       generatorHours:      values.generatorHours ? Number(values.generatorHours)                                  : undefined,
       houseSystems:        values.houseSystems   || [],
+      tagNumber:           values.tagNumber      || undefined,
+      tagExpirationDate:   values.tagExpirationDate?.toISOString(),
     };
 
     setLoading(true);
@@ -674,6 +676,14 @@ const AddRv = () => {
 
                 <Form.Item label={fieldLabel("Phone Number")} name="phoneNumber" className="mb-0">
                   <Input size="large" type="number" className={inputClass} placeholder="Phone Number" />
+                </Form.Item>
+
+                <Form.Item label={fieldLabel("Tag #")} name="tagNumber" className="mb-0">
+                  <Input size="large" className={inputClass} placeholder="e.g. ABC-1234" />
+                </Form.Item>
+
+                <Form.Item label={fieldLabel("Tag Expiration Date")} name="tagExpirationDate" className="mb-0">
+                  <DatePicker size="large" format={dateFormat} className="w-full rounded-lg border-[#E0E0E0]" placeholder="MM/DD/YYYY" />
                 </Form.Item>
               </div>
             </Card>

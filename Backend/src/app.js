@@ -85,6 +85,7 @@ app.use('/api/repair-order', require('./app/module/RepairOrder/repairOrder.route
 app.use('/api/smart-suggestions', require('./app/module/SmartSuggestions/smartSuggestions.router'));
 app.use('/api/component', require('./app/module/Component/component.router'));
 app.use('/api/notifications', require('./app/module/Notification/notification.router'));
+app.use('/api/other', require('./app/module/Other/other.router'));
 
 app.get('/', (req, res) => {
   res.send("All ok")

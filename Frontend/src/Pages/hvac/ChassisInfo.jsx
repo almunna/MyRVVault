@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { SearchOutlined } from "@ant-design/icons";
 import { useDeleteChassisMutation, useGetChassisQuery } from "../redux/api/routesApi";
 import { message } from "antd";
 import { useGetProfileQuery } from "../redux/api/userApi";
@@ -13,6 +14,23 @@ const SectionHeading = ({ title }) => (
     <div className="flex-1 h-px bg-[#F9B038]/20" />
   </div>
 );
+
+const PartSearchButton = ({ partNo, partName }) => {
+  if (!partNo || partNo === "N/A") return null;
+  const handleSearch = () => {
+    const q = encodeURIComponent(`${partNo} ${partName || "auto part"} near me`);
+    window.open(`https://www.google.com/search?q=${q}`, "_blank", "noopener,noreferrer");
+  };
+  return (
+    <button
+      onClick={handleSearch}
+      className="ml-2 inline-flex items-center gap-1.5 text-xs font-semibold bg-[#F9B038] text-black px-3 py-1.5 rounded-lg shadow-sm hover:bg-[#e0982a] active:scale-95 transition-all duration-200 flex-shrink-0"
+    >
+      <SearchOutlined className="text-xs" />
+      Find Near Me
+    </button>
+  );
+};
 
 const InfoRow = ({ label, value }) => {
   if (!value && value !== 0) return null;
@@ -122,7 +140,10 @@ const ChassisInfo = () => {
                 {chassis.belt.map((belt, i) => (
                   <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
                     <span className="text-gray-500 text-sm">{belt.name || `Belt ${i + 1}`}</span>
-                    <span className="text-gray-900 text-sm font-medium">Part #{belt.partNo || "N/A"}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-900 text-sm font-medium">Part #{belt.partNo || "N/A"}</span>
+                      <PartSearchButton partNo={belt.partNo} partName={belt.name || `Belt ${i + 1}`} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -137,7 +158,10 @@ const ChassisInfo = () => {
                 {chassis.oilFilter.map((oil, i) => (
                   <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
                     <span className="text-gray-500 text-sm">{oil.name || `Filter ${i + 1}`}</span>
-                    <span className="text-gray-900 text-sm font-medium">Part #{oil.partNo || "N/A"}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-900 text-sm font-medium">Part #{oil.partNo || "N/A"}</span>
+                      <PartSearchButton partNo={oil.partNo} partName={oil.name || `Oil Filter ${i + 1}`} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -152,7 +176,10 @@ const ChassisInfo = () => {
                 {chassis.fuelFilter.map((fuel, i) => (
                   <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0">
                     <span className="text-gray-500 text-sm">{fuel.name || `Filter ${i + 1}`}</span>
-                    <span className="text-gray-900 text-sm font-medium">Part #{fuel.partNo || "N/A"}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-900 text-sm font-medium">Part #{fuel.partNo || "N/A"}</span>
+                      <PartSearchButton partNo={fuel.partNo} partName={fuel.name || `Fuel Filter ${i + 1}`} />
+                    </div>
                   </div>
                 ))}
               </div>

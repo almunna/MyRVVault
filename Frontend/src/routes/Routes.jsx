@@ -47,6 +47,7 @@ import AddAnFueltFilter from "../Pages/information/AddAnFueltFilter";
 import AddOtherBelt from "../Pages/information/AddOtherBelt";
 import AddNewMaintanceSchedule from "../Pages/newMaintenace/AddNewMaintanceSchedule";
 import UpdateMaintanceSchedule from "../Pages/newMaintenace/UpdateMaintanceSchedule";
+import MaintenanceReport from "../Pages/newMaintenace/MaintenanceReport";
 import Tire from "../Pages/tire/Tire";
 import AddTire from "../Pages/tire/AddTire";
 import UpdateTire from "../Pages/tire/UpdateTire";
@@ -635,6 +636,15 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
            <OverDue></OverDue>
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "/maintenanceReport",
+        element: (
+          <ProtectedRoute>
+            <MaintenanceReport />
           </ProtectedRoute>
         ),
       },

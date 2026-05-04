@@ -5,6 +5,7 @@ const { docToObj, queryToArr } = require('../../../utils/firestoreHelper');
 const getSelectedRvByUserId = require('../../../utils/currentRv');
 const { updateRVMaintenanceStatus: updateRVMaintenanceStatusUtil, calculateMaintenanceStatus } = require('../../../utils/maintenanceUtils');
 const QueryBuilder = require('../../../builder/queryBuilder');
+const deleteStorageFiles = require('../../../utils/deleteS3ObjectsImage');
 
 const col = () => db.collection('maintenanceSchedules');
 const rvCol = () => db.collection('rvs');
@@ -262,10 +263,17 @@ exports.updateMaintenanceSchedule = asyncHandler(async (req, res) => {
     if (req.body.cost !== undefined) updates.cost = req.body.cost ? Number(req.body.cost) : null;
     if (req.body.hoursAtMaintenance !== undefined) updates.hoursAtMaintenance = req.body.hoursAtMaintenance ? Number(req.body.hoursAtMaintenance) : null;
 
-    // Append new images if uploaded
-    if (req.files && req.files.length > 0) {
-        const newImages = req.files.map(f => f.location);
-        updates.images = [...(existingSchedule.images || []), ...newImages];
+    const oldImages = existingSchedule.images || [];
+    const newUploads = req.files ? req.files.map(f => f.location) : [];
+    const keepImages = req.body.keepImages ? JSON.parse(req.body.keepImages) : null;
+    delete updates.keepImages;
+
+    if (keepImages !== null) {
+        const toDelete = oldImages.filter(url => !keepImages.includes(url));
+        updates.images = [...keepImages, ...newUploads];
+        if (toDelete.length > 0) await deleteStorageFiles(toDelete);
+    } else if (newUploads.length > 0) {
+        updates.images = [...oldImages, ...newUploads];
     }
 
     await col().doc(req.params.id).update(updates);
@@ -314,21 +322,57 @@ exports.updateRVMaintenanceStatus = asyncHandler(async (req, res) => {
     const ms = docToObj(snap);
     if (ms.user !== userId || ms.rvId !== rvId) throw new ApiError('Maintenance schedule not found or access denied', 404);
 
+    const completionDateStr = new Date().toISOString();
     await col().doc(maintenanceScheduleId).update({
         isCompleted: true,
-        completionDate: new Date().toISOString(),
+        completionDate: completionDateStr,
         vendor,
         cost,
         date,
         updatedAt: FieldValue.serverTimestamp()
     });
 
+    // Auto-schedule next occurrence if recurrence fields are set
+    let nextSchedule = null;
+    if (ms.recurringMiles || ms.recurringMonths) {
+        const rvSnap = await rvCol().doc(rvId).get();
+        const currentMileage = rvSnap.exists ? (rvSnap.data().currentMileage || 0) : 0;
+        const completionDate = new Date(completionDateStr);
+
+        const nextData = {
+            component: ms.component || null,
+            maintenanceToBePerformed: ms.maintenanceToBePerformed || null,
+            notes: ms.notes || null,
+            recurringMiles: ms.recurringMiles || null,
+            recurringMonths: ms.recurringMonths || null,
+            images: [],
+            isCompleted: false,
+            user: userId,
+            rvId,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp()
+        };
+
+        if (ms.componentInstance) nextData.componentInstance = ms.componentInstance;
+        if (ms.recurringMiles) nextData.initialMilage = currentMileage + Number(ms.recurringMiles);
+        if (ms.recurringMonths) {
+            const nextDate = new Date(completionDate);
+            nextDate.setMonth(nextDate.getMonth() + Number(ms.recurringMonths));
+            nextData.dateOfMaintenance = nextDate.toISOString();
+        }
+
+        const nextRef = await col().add(nextData);
+        nextSchedule = docToObj(await nextRef.get());
+    }
+
     const rvStatus = await updateRVMaintenanceStatusUtil(rvId);
     const updated = docToObj(await col().doc(maintenanceScheduleId).get());
 
     res.status(200).json({
         success: true,
-        message: 'Maintenance schedule marked as completed and RV status updated successfully',
-        data: { maintenanceSchedule: updated, rvStatus }
+        message: nextSchedule
+            ? 'Maintenance completed and next service auto-scheduled'
+            : 'Maintenance schedule marked as completed and RV status updated successfully',
+        data: { maintenanceSchedule: updated, rvStatus, nextSchedule }
     });
 });

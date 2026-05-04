@@ -12,6 +12,14 @@ const DetailRow = ({ label, value }) => {
   );
 };
 
+const getTagAlert = (tagExpirationDate) => {
+  if (!tagExpirationDate) return null;
+  const daysLeft = Math.ceil((new Date(tagExpirationDate) - new Date()) / 86400000);
+  if (daysLeft < 0) return { label: "Tag Expired", color: "#ef4444", bg: "#fee2e2" };
+  if (daysLeft <= 30) return { label: `Tag expires in ${daysLeft}d`, color: "#f97316", bg: "#ffedd5" };
+  return null;
+};
+
 const Badge = ({ children, color }) => (
   <span
     className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
@@ -113,7 +121,7 @@ const MyRv = () => {
                   <h2 className="text-lg font-bold text-gray-900 truncate">
                     {item.nickname || "Unnamed RV"}
                   </h2>
-                  <div className="flex gap-1.5 flex-shrink-0">
+                  <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
                     {item.isSold && <Badge color="#ef4444">Sold</Badge>}
                     {item.isOverdueForMaintenance && (
                       <Badge color="#f97316">Overdue</Badge>
@@ -123,6 +131,10 @@ const MyRv = () => {
                         {item.condition}
                       </Badge>
                     )}
+                    {(() => {
+                      const alert = getTagAlert(item.tagExpirationDate);
+                      return alert ? <Badge color={alert.color}>{alert.label}</Badge> : null;
+                    })()}
                   </div>
                 </div>
 
@@ -145,6 +157,20 @@ const MyRv = () => {
               <div className="px-5 py-4 flex-1">
                 <DetailRow label="Model" value={item.model} />
                 <DetailRow label="VIN #" value={item.vinNumber} />
+                <DetailRow label="Tag #" value={item.tagNumber} />
+                {item.tagExpirationDate && (() => {
+                  const alert = getTagAlert(item.tagExpirationDate);
+                  const dateStr = new Date(item.tagExpirationDate).toLocaleDateString();
+                  return (
+                    <div className="flex justify-between items-start gap-2 py-1.5 border-b border-gray-100">
+                      <span className="text-gray-500 text-sm whitespace-nowrap">Tag Expiration</span>
+                      <span className={`text-sm font-medium text-right ${alert?.color === "#ef4444" ? "text-red-600" : alert ? "text-orange-500" : "text-gray-800"}`}>
+                        {dateStr}
+                        {alert && <span className="ml-1.5 text-xs font-semibold" style={{ color: alert.color }}>({alert.label})</span>}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <DetailRow
                   label="Amount Paid"
                   value={item.amountPaid ? `$${Number(item.amountPaid).toLocaleString()}` : null}

@@ -54,7 +54,9 @@ const Card = ({ icon, title, children }) => (
   </div>
 );
 
-const emptyLineItem = () => ({ component: "", description: "", cost: "", quantity: "1" });
+const UNIT_SUGGESTIONS = ["Front", "Mid", "Rear", "Left", "Right", "Upper", "Lower", "Main"];
+
+const emptyLineItem = () => ({ component: "", unit: "", description: "", cost: "", quantity: "1" });
 
 const UpdateRepairOrder = () => {
   const { id } = useParams();
@@ -82,6 +84,7 @@ const UpdateRepairOrder = () => {
           order.lineItems.map((item) => ({
             id:          item.id || "",
             component:   item.component   || "",
+            unit:        item.unit        || "",
             description: item.description || "",
             cost:        item.cost?.toString()     || "",
             quantity:    item.quantity?.toString() || "1",
@@ -218,56 +221,78 @@ const UpdateRepairOrder = () => {
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <div>
-                        <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Component <span className="text-red-500">*</span></p>
-                        <Select
-                          size="middle"
-                          className="w-full"
-                          value={item.component || undefined}
-                          onChange={(v) => updateLineItem(index, "component", v)}
-                          placeholder="Select"
-                        >
-                          {COMPONENT_OPTIONS.map((c) => (
-                            <Select.Option key={c} value={c}>{c}</Select.Option>
-                          ))}
-                        </Select>
+                    <div className="space-y-3">
+                      {/* Row 1: Component + Unit */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Component <span className="text-red-500">*</span></p>
+                          <Select
+                            size="middle"
+                            className="w-full"
+                            value={item.component || undefined}
+                            onChange={(v) => updateLineItem(index, "component", v)}
+                            placeholder="Select"
+                          >
+                            {COMPONENT_OPTIONS.map((c) => (
+                              <Select.Option key={c} value={c}>{c}</Select.Option>
+                            ))}
+                          </Select>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Specific Unit</p>
+                          <Select
+                            size="middle"
+                            className="w-full"
+                            value={item.unit || undefined}
+                            onChange={(v) => updateLineItem(index, "unit", v)}
+                            placeholder="Select unit…"
+                            allowClear
+                            showSearch
+                          >
+                            {UNIT_SUGGESTIONS.map((s) => (
+                              <Select.Option key={s} value={s}>{s}</Select.Option>
+                            ))}
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Description</p>
-                        <Input
-                          size="middle"
-                          className={inputClass}
-                          placeholder="What was done?"
-                          value={item.description}
-                          onChange={(e) => updateLineItem(index, "description", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Cost ($)</p>
-                        <Input
-                          size="middle"
-                          className={inputClass}
-                          placeholder="0.00"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.cost}
-                          onChange={(e) => updateLineItem(index, "cost", e.target.value)}
-                          prefix={<span className="text-gray-400 text-sm">$</span>}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Qty</p>
-                        <Input
-                          size="middle"
-                          className={inputClass}
-                          placeholder="1"
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateLineItem(index, "quantity", e.target.value)}
-                        />
+                      {/* Row 2: Description + Cost + Qty */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Description</p>
+                          <Input
+                            size="middle"
+                            className={inputClass}
+                            placeholder="What was done?"
+                            value={item.description}
+                            onChange={(e) => updateLineItem(index, "description", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Cost ($)</p>
+                          <Input
+                            size="middle"
+                            className={inputClass}
+                            placeholder="0.00"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.cost}
+                            onChange={(e) => updateLineItem(index, "cost", e.target.value)}
+                            prefix={<span className="text-gray-400 text-sm">$</span>}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#5A5A5A] mb-1 font-medium">Qty</p>
+                          <Input
+                            size="middle"
+                            className={inputClass}
+                            placeholder="1"
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateLineItem(index, "quantity", e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
                     {item.component && item.cost && (

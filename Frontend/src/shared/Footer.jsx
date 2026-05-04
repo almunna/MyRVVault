@@ -70,7 +70,7 @@ export const Footer = () => {
   ];
 
   return (
-    <footer className="mt-20">
+    <footer className="mt-20 print:hidden">
       {/* Newsletter CTA */}
       <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8 mb-[-1px]">
         <div className="bg-[#1A1A1A] rounded-t-2xl py-10 px-6 md:px-12">

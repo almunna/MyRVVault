@@ -1214,6 +1214,15 @@ const routesApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["terms"],
     }),
+
+  markMaintenanceComplete: builder.mutation({
+      query: ({ rvId, maintenanceScheduleId, vendor, cost, date }) => ({
+        url: `/maintenance-schedule/update-rv-status/${rvId}`,
+        method: "PUT",
+        body: { maintenanceScheduleId, vendor, cost, date },
+      }),
+      invalidatesTags: ["terms"],
+    }),
     addMember: builder.mutation({
       query: (data) => {
         return {
@@ -1816,7 +1825,7 @@ export const {
   useGetMaintanceQuery,
   useGetMaintanceAllQuery,
   useDeleteMaintanceMutation,
-  useGetSingleMaintanceQuery,useUpdateMaintanceMutation,
+  useGetSingleMaintanceQuery, useUpdateMaintanceMutation, useMarkMaintenanceCompleteMutation,
   useAddMemberMutation,
   useGetMemberShipQuery,
   useDeleteMemberShipMutation,useGetSingleMembershipQuery,useUpdateMemberShipMutation,

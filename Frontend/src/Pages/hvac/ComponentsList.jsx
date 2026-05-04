@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Spin, Modal, message, Progress } from "antd";
+import { Spin, Modal, message, Progress, Image } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined,
   WarningOutlined, CheckCircleOutlined, ClockCircleOutlined,
   HistoryOutlined, RightOutlined, DownOutlined, SafetyCertificateOutlined,
+  CloseCircleFilled,
 } from "@ant-design/icons";
 import { COMPONENT_TYPES, CATEGORY_META } from "./componentConfig";
 import {
   useGetComponentsQuery,
   useDeleteComponentMutation,
   useMarkComponentReplacedMutation,
+  useUpdateComponentMutation,
 } from "../redux/api/routesApi";
 
 // ── Warranty status helper ────────────────────────────────────────────────────
@@ -128,6 +130,18 @@ const ComponentCard = ({ item, typeKey, cfg }) => {
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [deleteComponent] = useDeleteComponentMutation();
   const [markReplaced, { isLoading: replacing }] = useMarkComponentReplacedMutation();
+  const [updateComponent] = useUpdateComponentMutation();
+
+  const handleDeleteImage = async (urlToRemove) => {
+    const keepImages = (item.images || []).filter(u => u !== urlToRemove);
+    const formData = new FormData();
+    formData.append("keepImages", JSON.stringify(keepImages));
+    try {
+      await updateComponent({ urlPath: cfg.urlPath, id: item.id, data: formData }).unwrap();
+    } catch {
+      message.error("Failed to delete photo");
+    }
+  };
 
   const handleDelete = () => {
     Modal.confirm({
@@ -242,6 +256,34 @@ const ComponentCard = ({ item, typeKey, cfg }) => {
             {/* Notes */}
             {item.notes && (
               <div className="mt-2 text-xs text-[#5A5A5A] italic">{item.notes}</div>
+            )}
+
+            {/* Photos */}
+            {item.images?.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-[#5A5A5A] mb-2">Photos</p>
+                <Image.PreviewGroup>
+                  <div className="flex gap-2 flex-wrap">
+                    {item.images.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <Image
+                          src={url}
+                          width={72}
+                          height={72}
+                          style={{ objectFit: "cover", borderRadius: 8 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteImage(url); }}
+                          className="absolute -top-2 -right-2 z-10 text-red-500 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <CloseCircleFilled style={{ fontSize: 16 }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </Image.PreviewGroup>
+              </div>
             )}
 
             {/* Replacement history */}

@@ -10,6 +10,8 @@ import {
   ClockCircleOutlined,
   BulbOutlined,
   PlusOutlined,
+  SyncOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
 import { Upload } from "antd";
 import { useAddMaintanceMutation } from "../redux/api/routesApi";
@@ -54,6 +56,13 @@ const COMPONENT_LABELS = {
   washer: "Washer", ventFans: "Vent Fans", tv: "TV",
   waterPump: "Water Pump", wifiRouter: "WiFi Router",
 };
+
+// Components that can have multiple instances (Front A/C, Rear A/C, etc.)
+const MULTI_INSTANCE_COMPONENTS = [
+  "airConditioning", "heater", "exhaustFans", "ventFans", "ceilingFans",
+  "tv", "waterHeater", "waterPump", "tire", "toilet",
+];
+const UNIT_SUGGESTIONS = ["Front", "Rear", "Bedroom", "Living Room", "Master", "Upper", "Lower"];
 
 const fieldLabel = (text) => (
   <span className="text-sm font-medium text-[#5A5A5A]">{text}</span>
@@ -110,12 +119,16 @@ const AddNewMaintanceSchedule = () => {
     try {
       const formData = new FormData();
       if (values.component)               formData.append("component", values.component);
+      if (values.componentInstance)       formData.append("componentInstance", values.componentInstance);
       if (values.milage)                  formData.append("initialMilage", parseNumber(values.milage));
       if (values.maintenanceToBePerformed) formData.append("maintenanceToBePerformed", values.maintenanceToBePerformed);
       if (values.dateOfMaintenance)       formData.append("dateOfMaintenance", values.dateOfMaintenance.toISOString());
       if (values.notes)                   formData.append("notes", values.notes);
       if (values.cost_amount)             formData.append("cost", parseNumber(values.cost_amount));
+      if (values.vendor)                  formData.append("vendor", values.vendor);
       if (values.hoursAtMaintenance)      formData.append("hoursAtMaintenance", values.hoursAtMaintenance);
+      if (values.recurringMiles)          formData.append("recurringMiles", values.recurringMiles);
+      if (values.recurringMonths)         formData.append("recurringMonths", values.recurringMonths);
 
       fileList.forEach((file) => {
         if (file.originFileObj) formData.append("images", file.originFileObj);
@@ -233,6 +246,27 @@ const AddNewMaintanceSchedule = () => {
                 </Select>
               </Form.Item>
 
+              {/* Specific unit selector for multi-instance components */}
+              {selectedComponent && MULTI_INSTANCE_COMPONENTS.includes(selectedComponent) && (
+                <div className="mb-4">
+                  <Form.Item label={fieldLabel("Specific Unit (optional)")} name="componentInstance" className="mb-1">
+                    <Input size="large" placeholder="e.g. Front, Rear, Bedroom…" className={inputClass} />
+                  </Form.Item>
+                  <div className="flex flex-wrap gap-1.5">
+                    {UNIT_SUGGESTIONS.map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => form.setFieldValue("componentInstance", unit)}
+                        className="text-xs px-2.5 py-1 rounded-full bg-[#F5F5F0] border border-[#E0E0E0] text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all"
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Inline related hint while selecting */}
               {selectedComponent && (RELATED_COMPONENTS[selectedComponent] || []).length > 0 && !savedComponent && (
                 <div className="mb-4 flex flex-wrap gap-1.5 items-center">
@@ -290,11 +324,40 @@ const AddNewMaintanceSchedule = () => {
               </div>
             </Card>
 
-            {/* Card 3 — Cost & Hours */}
-            <Card icon={<DollarOutlined />} title="Cost & Generator Hours">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Card 3 — Recurrence */}
+            <Card icon={<SyncOutlined />} title="Recurrence (Optional)">
+              <p className="text-xs text-[#5A5A5A] mb-4">
+                Set an interval and the next service auto-schedules when this one is marked complete.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item label={fieldLabel("Every ___ miles")} name="recurringMiles" className="mb-0">
+                  <Input
+                    size="large"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 5000"
+                    suffix={<span className="text-gray-400 text-sm">mi</span>}
+                    className={inputClass}
+                  />
+                </Form.Item>
+                <Form.Item label={fieldLabel("Every ___ months")} name="recurringMonths" className="mb-0">
+                  <Input
+                    size="large"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 6"
+                    suffix={<span className="text-gray-400 text-sm">mo</span>}
+                    className={inputClass}
+                  />
+                </Form.Item>
+              </div>
+            </Card>
+
+            {/* Card 5 — Cost & Repair Info */}
+            <Card icon={<DollarOutlined />} title="Cost & Repair Info">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <Form.Item
-                  label={fieldLabel("Cost ($)")}
+                  label={fieldLabel("Actual Cost ($)")}
                   name="cost_amount"
                   normalize={parseNumber}
                   getValueProps={(v) => ({ value: formatWithCommas(v) })}
@@ -318,6 +381,18 @@ const AddNewMaintanceSchedule = () => {
                   />
                 </Form.Item>
 
+                <Form.Item label={fieldLabel("Repair Shop / Vendor")} name="vendor" className="mb-0">
+                  <Input
+                    size="large"
+                    placeholder="e.g. Camping World, Local Shop…"
+                    prefix={<ShopOutlined className="text-gray-400" />}
+                    className={inputClass}
+                  />
+                </Form.Item>
+              </div>
+
+              {/* Generator Hours — only relevant for generator component */}
+              {selectedComponent === "generator" && (
                 <Form.Item
                   label={fieldLabel("Generator Hours at Service")}
                   name="hoursAtMaintenance"
@@ -342,7 +417,7 @@ const AddNewMaintanceSchedule = () => {
                     className={inputClass}
                   />
                 </Form.Item>
-              </div>
+              )}
             </Card>
 
             {/* Card 4 — Notes */}

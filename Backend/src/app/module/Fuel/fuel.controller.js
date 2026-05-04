@@ -39,7 +39,10 @@ exports.createFuelLog = asyncHandler(async (req, res) => {
     const hasAccess = await checkRvOwnership(userId, rvId);
     if (!hasAccess) throw new ApiError('You do not have permission to add fuel logs for this RV', 403);
 
-    const { odometer, gallons, pricePerGallon, notes, tripId, date } = req.body;
+    const {
+        odometer, gallons, pricePerGallon, notes, tripId, date,
+        stationName, stationAddress, stationCity, stationState, stationZip, stationPhone, stationWebsite,
+    } = req.body;
 
     if (!odometer) throw new ApiError('Odometer reading is required', 400);
     if (!gallons) throw new ApiError('Gallons is required', 400);
@@ -67,6 +70,13 @@ exports.createFuelLog = asyncHandler(async (req, res) => {
         notes: notes || '',
         tripId: tripId || null,
         date: date || new Date().toISOString(),
+        stationName: stationName || null,
+        stationAddress: stationAddress || null,
+        stationCity: stationCity || null,
+        stationState: stationState || null,
+        stationZip: stationZip || null,
+        stationPhone: stationPhone || null,
+        stationWebsite: stationWebsite || null,
         user: userId,
         rvId,
         createdAt: FieldValue.serverTimestamp(),

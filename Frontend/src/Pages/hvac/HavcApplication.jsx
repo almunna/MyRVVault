@@ -41,14 +41,21 @@ const HavcApplication = () => {
 
                 {/* Component tiles */}
                 <div className="grid lg:grid-cols-4 md:grid-cols-3 grid-cols-2 gap-3">
-                  {types.map(({ key, label, icon }) => (
+                  {types.map(({ key, label, icon, isOther }) => (
                     <Link key={key} to={`/components/${key}`}>
-                      <div className="bg-white border border-[#E8F0E8] rounded-2xl px-4 py-5 flex flex-col items-center gap-2 hover:shadow-md hover:border-[#3B7D3C] transition-all duration-200 cursor-pointer group">
-                        <span className="text-3xl">{icon}</span>
-                        <p className="text-sm font-semibold text-[#1A1A1A] text-center group-hover:text-[#3B7D3C] transition-colors">
-                          {label}
-                        </p>
-                      </div>
+                      {isOther ? (
+                        <div className="bg-[#3B7D3C] border border-[#3B7D3C] rounded-2xl px-4 py-5 flex flex-col items-center gap-2 hover:bg-[#2d6130] hover:shadow-md transition-all duration-200 cursor-pointer">
+                          <span className="text-3xl">➕</span>
+                          <p className="text-sm font-semibold text-white text-center">Other</p>
+                        </div>
+                      ) : (
+                        <div className="bg-white border border-[#E8F0E8] rounded-2xl px-4 py-5 flex flex-col items-center gap-2 hover:shadow-md hover:border-[#3B7D3C] transition-all duration-200 cursor-pointer group">
+                          <span className="text-3xl">{icon}</span>
+                          <p className="text-sm font-semibold text-[#1A1A1A] text-center group-hover:text-[#3B7D3C] transition-colors">
+                            {label}
+                          </p>
+                        </div>
+                      )}
                     </Link>
                   ))}
                 </div>

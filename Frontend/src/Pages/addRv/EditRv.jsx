@@ -269,6 +269,8 @@ const EditRv = () => {
       tireCount:           rv.tireCount,
       generatorHours:      rv.generatorHours,
       houseSystems:        normalizeHouseSystems(rv.houseSystems),
+      tagNumber:           rv.tagNumber || undefined,
+      tagExpirationDate:   rv.tagExpirationDate ? dayjs(rv.tagExpirationDate) : undefined,
       ...(length.feet && { lengthFeet: length.feet, lengthInches: length.inches }),
       ...(width.feet  && { widthFeet:  width.feet,  widthInches:  width.inches  }),
       ...(height.feet && { heightFeet: height.feet, heightInches: height.inches }),
@@ -316,6 +318,8 @@ const EditRv = () => {
       tireCount:           values.tireCount ? Number(values.tireCount) : undefined,
       generatorHours:      values.generatorHours ? Number(values.generatorHours) : undefined,
       houseSystems:        values.houseSystems || [],
+      tagNumber:           values.tagNumber || undefined,
+      tagExpirationDate:   values.tagExpirationDate?.toISOString(),
     };
 
     setLoading(true);
@@ -472,6 +476,15 @@ const EditRv = () => {
 
               <Form.Item label={<span style={labelStyle}>Phone Number</span>} name="phoneNumber">
                 <Input type="number" className={inputClass} placeholder="Phone Number" />
+              </Form.Item>
+
+              <Form.Item label={<span style={labelStyle}>Tag #</span>} name="tagNumber">
+                <Input className={inputClass} placeholder="e.g. ABC-1234" />
+              </Form.Item>
+
+              <Form.Item label={<span style={labelStyle}>Tag Expiration Date</span>} name="tagExpirationDate">
+                <DatePicker className="w-full bg-white border-2 border-[#F9B038] rounded-md py-2"
+                  format={dateFormat} style={{ width: "100%" }} />
               </Form.Item>
             </div>
 

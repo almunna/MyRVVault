@@ -149,7 +149,7 @@ export const Navbar = () => {
   ];
 
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm print:hidden">
       <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8">
         <nav className="flex items-center justify-between h-24">
 

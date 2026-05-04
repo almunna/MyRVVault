@@ -123,6 +123,24 @@ export const COMPONENT_TYPES = {
     replaceable: true, hasHours: false,
     icon: '🔧',
   },
+  houseOther: {
+    label: 'Other', urlPath: 'other',
+    collection: 'others', category: 'house',
+    replaceable: false, hasHours: false,
+    icon: '➕', isOther: true,
+  },
+  entertainmentOther: {
+    label: 'Other', urlPath: 'other',
+    collection: 'others', category: 'entertainment',
+    replaceable: false, hasHours: false,
+    icon: '➕', isOther: true,
+  },
+  chassisOther: {
+    label: 'Other', urlPath: 'other',
+    collection: 'others', category: 'chassis',
+    replaceable: false, hasHours: false,
+    icon: '➕', isOther: true,
+  },
 };
 
 export const CATEGORY_META = {

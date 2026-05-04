@@ -16,7 +16,7 @@ import {
   FaRoute,
   FaTools,
   FaClipboardList,
-  FaShieldAlt,
+  FaGasPump,
   FaWrench,
   FaCalendarAlt,
 } from "react-icons/fa";
@@ -150,10 +150,10 @@ const Hero = () => {
   };
 
   const features = [
-    { icon: <FaTools />, label: "Maintenance" },
-    { icon: <FaRoute />, label: "Trip Logs" },
-    { icon: <FaClipboardList />, label: "Checklists" },
-    { icon: <FaShieldAlt />, label: "Insurance" },
+    { icon: <FaTools />, label: "Maintenance", to: "/newMaintenance" },
+    { icon: <FaRoute />, label: "Trip Logs", to: null },
+    { icon: <FaClipboardList />, label: "Checklists", to: null },
+    { icon: <FaGasPump />, label: "Fuel Entry", to: "/fuelList" },
   ];
 
   return (
@@ -299,15 +299,18 @@ const Hero = () => {
 
               {/* Feature Pills — always visible */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mt-6 animate-fadeInUp animate-delay-300">
-                {features.map((f, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 bg-white border border-[#E8F0E8] rounded-full px-4 py-2 text-sm text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all duration-300 cursor-default"
-                  >
-                    <span className="text-[#3B7D3C]">{f.icon}</span>
-                    {f.label}
-                  </div>
-                ))}
+                {features.map((f, i) => {
+                  const pill = (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2 bg-white border border-[#E8F0E8] rounded-full px-4 py-2 text-sm text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all duration-300 ${f.to ? "cursor-pointer" : "cursor-default"}`}
+                    >
+                      <span className="text-[#3B7D3C]">{f.icon}</span>
+                      {f.label}
+                    </div>
+                  );
+                  return f.to ? <Link key={i} to={f.to}>{pill}</Link> : pill;
+                })}
               </div>
 
               {/* App Store Badges */}

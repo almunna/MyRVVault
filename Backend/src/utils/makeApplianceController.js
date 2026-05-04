@@ -121,9 +121,18 @@ function makeApplianceController(collectionName, searchFields = [], label = 'Ite
         if (req.body.installHours   != null) updateData.installHours   = Number(req.body.installHours);
         if (req.body.cost           != null) updateData.cost           = Number(req.body.cost);
 
-        if (req.files && req.files.length > 0) {
-            const oldImages = doc.data().images || [];
-            updateData.images = req.files.map(f => f.location);
+        const oldImages = doc.data().images || [];
+        const newUploads = req.files ? req.files.map(f => f.location) : [];
+        const keepImages = req.body.keepImages ? JSON.parse(req.body.keepImages) : null;
+        delete updateData.keepImages;
+
+        if (keepImages !== null) {
+            const toDelete = oldImages.filter(url => !keepImages.includes(url));
+            updateData.images = [...keepImages, ...newUploads];
+            await col().doc(req.params.id).update(updateData);
+            if (toDelete.length > 0) await deleteS3Objects(toDelete);
+        } else if (newUploads.length > 0) {
+            updateData.images = newUploads;
             await col().doc(req.params.id).update(updateData);
             await deleteS3Objects(oldImages);
         } else {

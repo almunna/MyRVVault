@@ -1,11 +1,11 @@
-import { Form, Input, DatePicker, Select, Spin, message } from "antd";
+import { Form, Input, DatePicker, Select, Spin, message, Image } from "antd";
 import { Upload } from "antd";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ToolOutlined, CalendarOutlined, DollarOutlined,
   FileTextOutlined, InboxOutlined, SafetyCertificateOutlined,
-  ClockCircleOutlined,
+  ClockCircleOutlined, CloseCircleFilled,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { COMPONENT_TYPES } from "./componentConfig";
@@ -38,6 +38,7 @@ const ComponentUpdate = () => {
   const cfg = COMPONENT_TYPES[type];
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const { data, isLoading } = useGetSingleComponentQuery(
@@ -49,6 +50,7 @@ const ComponentUpdate = () => {
   useEffect(() => {
     if (!data?.data) return;
     const item = data.data;
+    setExistingImages(item.images || []);
     form.setFieldsValue({
       name:              item.name            || "",
       location:          item.location        || undefined,
@@ -87,6 +89,7 @@ const ComponentUpdate = () => {
       if (values.installMileage)    formData.append("installMileage",    values.installMileage);
       if (cfg.hasHours && values.installHours) formData.append("installHours", values.installHours);
 
+      formData.append("keepImages", JSON.stringify(existingImages));
       const newFiles = fileList.filter(f => f.originFileObj);
       newFiles.forEach(f => formData.append("images", f.originFileObj));
 
@@ -203,13 +206,38 @@ const ComponentUpdate = () => {
 
             {/* Card 5: Photos */}
             <Card icon={<InboxOutlined />} title="Photos & Documents">
-              <p className="text-xs text-[#5A5A5A] mb-3">Upload new files to replace existing photos.</p>
+              {existingImages.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-[#5A5A5A] mb-2">Existing Photos</p>
+                  <Image.PreviewGroup>
+                    <div className="flex gap-2 flex-wrap">
+                      {existingImages.map((url, i) => (
+                        <div key={i} className="relative group">
+                          <Image
+                            src={url}
+                            width={80}
+                            height={80}
+                            style={{ objectFit: "cover", borderRadius: 8 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-2 -right-2 z-10 text-red-500 bg-white rounded-full shadow"
+                          >
+                            <CloseCircleFilled style={{ fontSize: 18 }} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
+                </div>
+              )}
               <Dragger fileList={fileList} onChange={({ fileList: l }) => setFileList(l)}
                 beforeUpload={() => false} multiple accept="image/*,application/pdf"
                 className="rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#3B7D3C] transition-colors">
                 <div className="py-6">
                   <p className="mb-2"><InboxOutlined style={{ fontSize: 32, color: "#3B7D3C" }} /></p>
-                  <p className="text-[#1A1A1A] font-medium text-sm">Click or drag files here</p>
+                  <p className="text-[#1A1A1A] font-medium text-sm">Click or drag to add more photos</p>
                   <p className="text-[#5A5A5A] text-xs mt-1">Photos (JPG, PNG) and documents (PDF)</p>
                 </div>
               </Dragger>

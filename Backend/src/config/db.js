@@ -11,19 +11,22 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     process.exit(1);
   }
 } else {
-  serviceAccount = require('../../my-rv-vault-26-firebase-adminsdk-fbsvc-9baea55f56.json');
+  serviceAccount = require('../../my-rv-vault-firebase-adminsdk-fbsvc-d75ced7cc1.json');
 }
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 const Timestamp = admin.firestore.Timestamp;
+const bucket = admin.storage().bucket();
 
 console.log('✅ Firebase Firestore connected');
+console.log('✅ Firebase Storage bucket:', bucket.name);
 
-module.exports = { db, FieldValue, Timestamp };
+module.exports = { db, FieldValue, Timestamp, bucket };
