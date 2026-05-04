@@ -143,6 +143,7 @@ import ComponentsList from "../Pages/hvac/ComponentsList";
 import ComponentAdd from "../Pages/hvac/ComponentAdd";
 import ComponentUpdate from "../Pages/hvac/ComponentUpdate";
 import NotificationCenter from "../Pages/notifications/NotificationCenter";
+import NotificationDetail from "../Pages/notifications/NotificationDetail";
 
 export const router = createBrowserRouter([
   {
@@ -905,7 +906,8 @@ export const router = createBrowserRouter([
       { path: "/updateRepairOrder/:id", element: <ProtectedRoute><UpdateRepairOrderNew /></ProtectedRoute> },
 
       { path: "/smartSuggestions", element: <ProtectedRoute><SmartSuggestions /></ProtectedRoute> },
-      { path: "/notifications",    element: <ProtectedRoute><NotificationCenter /></ProtectedRoute> },
+      { path: "/notifications",     element: <ProtectedRoute><NotificationCenter /></ProtectedRoute> },
+      { path: "/notifications/:id", element: <ProtectedRoute><NotificationDetail /></ProtectedRoute> },
 
       { path: "/components/:type", element: <ProtectedRoute><ComponentsList /></ProtectedRoute> },
       { path: "/components/:type/add", element: <ProtectedRoute><ComponentAdd /></ProtectedRoute> },

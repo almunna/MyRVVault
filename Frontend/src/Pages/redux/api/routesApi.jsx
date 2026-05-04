@@ -1647,6 +1647,10 @@ updateMileago: builder.mutation({
       query: ({ page = 1, limit = 20 } = {}) => ({ url: `/notifications/get?page=${page}&limit=${limit}`, method: "GET" }),
       providesTags: ["notifications"],
     }),
+    getNotificationById: builder.query({
+      query: (id) => ({ url: `/notifications/${id}`, method: "GET" }),
+      providesTags: ["notifications"],
+    }),
     getUnreadCount: builder.query({
       query: () => ({ url: "/notifications/unread-count", method: "GET" }),
       providesTags: ["notifications"],
@@ -1860,6 +1864,7 @@ export const {
   useDeleteComponentMutation,
   useMarkComponentReplacedMutation,
   useGetNotificationsQuery,
+  useGetNotificationByIdQuery,
   useGetUnreadCountQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,

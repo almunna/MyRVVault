@@ -40,6 +40,16 @@ exports.getUnreadCount = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, count: snap.size });
 });
 
+// GET /api/notifications/:id
+exports.getNotificationById = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) throw new ApiError('Notification not found', 404);
+    const notif = docToObj(snap);
+    if (notif.userId !== userId) throw new ApiError('Not authorized', 403);
+    res.status(200).json({ success: true, data: notif });
+});
+
 // PUT /api/notifications/read/:id
 exports.markAsRead = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;

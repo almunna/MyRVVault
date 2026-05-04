@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const {
     getNotifications,
+    getNotificationById,
     getUnreadCount,
     markAsRead,
     markAllAsRead,
@@ -13,10 +14,11 @@ const { authenticateUser } = require('../../middleware/auth.middleware');
 
 router.get('/get',              authenticateUser, getNotifications);
 router.get('/unread-count',     authenticateUser, getUnreadCount);
-router.put('/read/:id',         authenticateUser, markAsRead);
 router.put('/read-all',         authenticateUser, markAllAsRead);
-router.delete('/delete/:id',    authenticateUser, deleteNotification);
+router.put('/read/:id',         authenticateUser, markAsRead);
 router.delete('/clear-all',     authenticateUser, clearAll);
+router.delete('/delete/:id',    authenticateUser, deleteNotification);
 router.post('/generate',        authenticateUser, generateNotifications);
+router.get('/:id',              authenticateUser, getNotificationById); // must be last
 
 module.exports = router;
