@@ -26,6 +26,7 @@ const Login = () => {
         const payload = await googleLoginMutation({ accessToken: tokenResponse.access_token }).unwrap();
         if (payload?.accessToken) {
           localStorage.setItem("accessToken", payload.accessToken);
+          if (payload.refreshToken) localStorage.setItem("refreshToken", payload.refreshToken);
           message.success(payload?.message || "Google login successful!");
           const rvArray = payload?.user?.rv || [];
           navigate(rvArray.length === 0 ? "/addRv" : "/");
@@ -75,6 +76,7 @@ const Login = () => {
       if (payload?.accessToken) {
         // Save tokens
         localStorage.setItem("accessToken", payload.accessToken);
+        if (payload.refreshToken) localStorage.setItem("refreshToken", payload.refreshToken);
 
         // ✅ Handle Remember Me
         if (values.remember) {

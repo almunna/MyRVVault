@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const { signup, verifyEmail, login, adminLogin, resendVerificationCode, forgotPassword, resetPassword, verifyCode, resendPasswordResetCode, adminForgotPassword, adminVerifyCode, adminResetPassword, googleLogin } = require('./auth.controller');
+const { signup, verifyEmail, login, adminLogin, resendVerificationCode, forgotPassword, resetPassword, verifyCode, resendPasswordResetCode, adminForgotPassword, adminVerifyCode, adminResetPassword, googleLogin, refreshToken } = require('./auth.controller');
 
 
 router.post('/register', signup);
@@ -19,6 +19,7 @@ router.post('/admin-forgot-password', adminForgotPassword);
 router.post('/admin-verify-code', adminVerifyCode);
 router.post('/admin-reset-password', adminResetPassword);
 router.post('/google-login', googleLogin);
+router.post('/refresh-token', refreshToken);
 // router.post('/apple-login', appleLogin); // Apple login — disabled
 
 

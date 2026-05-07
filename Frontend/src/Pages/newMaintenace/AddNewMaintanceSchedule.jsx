@@ -14,7 +14,7 @@ import {
   ShopOutlined,
 } from "@ant-design/icons";
 import { Upload } from "antd";
-import { useAddMaintanceMutation } from "../redux/api/routesApi";
+import { useAddMaintanceMutation, useGetComponentsQuery } from "../redux/api/routesApi";
 import { useGetProfileQuery } from "../redux/api/userApi";
 
 const { Dragger } = Upload;
@@ -61,8 +61,33 @@ const COMPONENT_LABELS = {
 const MULTI_INSTANCE_COMPONENTS = [
   "airConditioning", "heater", "exhaustFans", "ventFans", "ceilingFans",
   "tv", "waterHeater", "waterPump", "tire", "toilet",
+  "washer", "dryer", "dishwasher", "dvdPlayer", "surroundSound",
+  "wifiRouter", "internetSatellite", "gps", "outdoorRadio",
 ];
 const UNIT_SUGGESTIONS = ["Front", "Rear", "Bedroom", "Living Room", "Master", "Upper", "Lower"];
+
+// Maps maintenance form component key → API urlPath (from componentConfig.js)
+const COMPONENT_API_PATH = {
+  airConditioning:   "air-condition",
+  heater:            "heater",
+  waterPump:         "water-pump",
+  washer:            "washer",
+  waterHeater:       "water-heater",
+  dryer:             "dryer",
+  toilet:            "toilet",
+  dishwasher:        "dishwasher",
+  exhaustFans:       "exhaust-fans",
+  ventFans:          "vent-fans",
+  ceilingFans:       "celling-fans",
+  tv:                "tv",
+  dvdPlayer:         "dvd",
+  surroundSound:     "surround-sound",
+  wifiRouter:        "wifi-router",
+  internetSatellite: "internet-satellite",
+  gps:               "gps",
+  outdoorRadio:      "outdoor-radio",
+  tire:              "tire",
+};
 
 const fieldLabel = (text) => (
   <span className="text-sm font-medium text-[#5A5A5A]">{text}</span>
@@ -92,6 +117,12 @@ const AddNewMaintanceSchedule = () => {
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [selectedComponent, setSelectedComponent] = useState(null);
+
+  const componentUrlPath = selectedComponent ? COMPONENT_API_PATH[selectedComponent] : null;
+  const { data: componentUnitsData } = useGetComponentsQuery(componentUrlPath, {
+    skip: !componentUrlPath,
+  });
+  const componentUnits = componentUnitsData?.data || [];
   const [savedComponent, setSavedComponent] = useState(null); // shown after submit
 
   useEffect(() => { handleFormChange(); }, []);
@@ -217,11 +248,14 @@ const AddNewMaintanceSchedule = () => {
                   placeholder="Select Component"
                   size="large"
                   className="w-full"
-                  onChange={(val) => setSelectedComponent(val)}
+                  onChange={(val) => {
+                    setSelectedComponent(val);
+                    form.setFieldValue("componentInstance", undefined);
+                  }}
                 >
-                  <Select.Option value="chassis">Chassis</Select.Option>
-                  <Select.Option value="ceilingFans">Ceiling Fans</Select.Option>
                   <Select.Option value="airConditioning">Air Conditioning</Select.Option>
+                  <Select.Option value="ceilingFans">Ceiling Fans</Select.Option>
+                  <Select.Option value="chassis">Chassis</Select.Option>
                   <Select.Option value="dishwasher">Dishwasher</Select.Option>
                   <Select.Option value="dryer">Dryer</Select.Option>
                   <Select.Option value="dvdPlayer">DVD Player</Select.Option>
@@ -229,18 +263,18 @@ const AddNewMaintanceSchedule = () => {
                   <Select.Option value="gps">GPS</Select.Option>
                   <Select.Option value="heater">Heater</Select.Option>
                   <Select.Option value="insurance">Insurance</Select.Option>
-                  <Select.Option value="satelliteInternet">Satellite Internet</Select.Option>
                   <Select.Option value="maintenanceSchedule">Maintenance Schedule</Select.Option>
                   <Select.Option value="membership">Membership</Select.Option>
                   <Select.Option value="outdoorRadio">Outdoor Radio</Select.Option>
                   <Select.Option value="rv">RV</Select.Option>
+                  <Select.Option value="satelliteInternet">Satellite Internet</Select.Option>
                   <Select.Option value="surroundSound">Surround Sound</Select.Option>
                   <Select.Option value="tire">Tire</Select.Option>
                   <Select.Option value="toilet">Toilet</Select.Option>
-                  <Select.Option value="waterHeater">Water Heater</Select.Option>
-                  <Select.Option value="washer">Washer</Select.Option>
-                  <Select.Option value="ventFans">Vent Fans</Select.Option>
                   <Select.Option value="tv">TV</Select.Option>
+                  <Select.Option value="ventFans">Vent Fans</Select.Option>
+                  <Select.Option value="washer">Washer</Select.Option>
+                  <Select.Option value="waterHeater">Water Heater</Select.Option>
                   <Select.Option value="waterPump">Water Pump</Select.Option>
                   <Select.Option value="wifiRouter">WiFi Router</Select.Option>
                 </Select>
@@ -249,21 +283,32 @@ const AddNewMaintanceSchedule = () => {
               {/* Specific unit selector for multi-instance components */}
               {selectedComponent && MULTI_INSTANCE_COMPONENTS.includes(selectedComponent) && (
                 <div className="mb-4">
-                  <Form.Item label={fieldLabel("Specific Unit (optional)")} name="componentInstance" className="mb-1">
-                    <Input size="large" placeholder="e.g. Front, Rear, Bedroom…" className={inputClass} />
+                  <Form.Item label={fieldLabel("Specific Unit (optional)")} name="componentInstance">
+                    <Select
+                      size="large"
+                      placeholder="e.g. Front, Rear, Bedroom…"
+                      allowClear
+                      className="w-full"
+                      popupClassName="rv-select-dropdown"
+                    >
+                      {componentUnits.length > 0 && (
+                        <Select.OptGroup label="Your Units">
+                          {[...componentUnits].sort((a, b) => a.name.localeCompare(b.name)).map((unit) => (
+                            <Select.Option key={unit.id} value={unit.name}>
+                              {unit.name}
+                            </Select.Option>
+                          ))}
+                        </Select.OptGroup>
+                      )}
+                      <Select.OptGroup label="Common">
+                        {[...UNIT_SUGGESTIONS].sort((a, b) => a.localeCompare(b)).map((unit) => (
+                          <Select.Option key={unit} value={unit}>
+                            {unit}
+                          </Select.Option>
+                        ))}
+                      </Select.OptGroup>
+                    </Select>
                   </Form.Item>
-                  <div className="flex flex-wrap gap-1.5">
-                    {UNIT_SUGGESTIONS.map((unit) => (
-                      <button
-                        key={unit}
-                        type="button"
-                        onClick={() => form.setFieldValue("componentInstance", unit)}
-                        className="text-xs px-2.5 py-1 rounded-full bg-[#F5F5F0] border border-[#E0E0E0] text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all"
-                      >
-                        {unit}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -272,9 +317,18 @@ const AddNewMaintanceSchedule = () => {
                 <div className="mb-4 flex flex-wrap gap-1.5 items-center">
                   <span className="text-xs text-[#5A5A5A]">Often done together:</span>
                   {(RELATED_COMPONENTS[selectedComponent] || []).map((comp) => (
-                    <span key={comp} className="text-xs px-2 py-0.5 rounded-full bg-[#E8F0E8] text-[#3B7D3C] border border-[#3B7D3C]/20 font-medium">
+                    <button
+                      key={comp}
+                      type="button"
+                      onClick={() => {
+                        form.setFieldValue("component", comp);
+                        form.setFieldValue("componentInstance", undefined);
+                        setSelectedComponent(comp);
+                      }}
+                      className="text-xs px-2 py-0.5 rounded-full bg-[#E8F0E8] text-[#3B7D3C] border border-[#3B7D3C]/20 font-medium hover:bg-[#3B7D3C] hover:text-white transition-all cursor-pointer"
+                    >
                       {COMPONENT_LABELS[comp] || comp}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}

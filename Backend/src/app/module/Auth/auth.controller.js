@@ -444,6 +444,29 @@ exports.googleLogin = async (req, res, next) => {
   }
 };
 
+exports.refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) throw new ApiError('Refresh token is required', 400);
+
+    const decoded = tokenService.verifyRefreshToken(refreshToken);
+
+    const collection = decoded.role === 'ADMIN' ? 'admins' : 'users';
+    const doc = await db.collection(collection).doc(decoded.id).get();
+    if (!doc.exists) throw new ApiError('User not found', 401);
+
+    const payload = { id: decoded.id, role: decoded.role };
+    if (decoded.selectedRvId !== undefined) payload.selectedRvId = decoded.selectedRvId;
+
+    const accessToken = tokenService.generateAccessToken(payload);
+    const newRefreshToken = tokenService.generateRefreshToken(payload);
+
+    return res.status(200).json({ success: true, accessToken, refreshToken: newRefreshToken });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // APPLE LOGIN — commented out, not in use
 // exports.appleLogin = async (req, res, next) => {
 //   try {
