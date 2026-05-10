@@ -71,9 +71,23 @@ const FuelList = () => {
   const [deleteFuelLog] = useDeleteFuelLogMutation();
   const [deletingId, setDeletingId] = useState(null);
 
+  const [dateRange, setDateRange] = useState(["", ""]);
+  const hasDateRange = !!(dateRange[0] && dateRange[1]);
+
   const logs    = data?.data || [];
   const summary = data?.summary || {};
   const stats   = statsData?.data || {};
+
+  const visibleLogs = hasDateRange
+    ? logs.filter(log => {
+        if (!log.date) return false;
+        const d = new Date(log.date);
+        const start = new Date(dateRange[0]);
+        const end = new Date(dateRange[1]);
+        end.setHours(23, 59, 59, 999);
+        return d >= start && d <= end;
+      })
+    : logs;
   const mpgTrend  = (stats.mpgTrend  || []).map(p => ({ ...p, label: fmt(p.date) }));
   const costTrend = (stats.costTrend || []).map(p => ({ ...p, label: fmt(p.date) }));
 
@@ -117,16 +131,43 @@ const FuelList = () => {
               <h1 className="text-3xl font-bold text-[#1A1A1A]">Fuel Log</h1>
             </div>
             <p className="text-[#5A5A5A] text-sm ml-4 pl-3">
-              {summary.totalEntries
-                ? `${summary.totalEntries} fill-up${summary.totalEntries !== 1 ? "s" : ""} recorded`
-                : "Track every fill-up to monitor MPG and spending"}
+              {hasDateRange
+                ? <>{visibleLogs.length} fill-up{visibleLogs.length !== 1 ? "s" : ""} <span className="text-[#3B7D3C]">(filtered)</span></>
+                : summary.totalEntries
+                  ? `${summary.totalEntries} fill-up${summary.totalEntries !== 1 ? "s" : ""} recorded`
+                  : "Track every fill-up to monitor MPG and spending"}
             </p>
           </div>
-          <Link to="/addFuel">
-            <button className="flex items-center gap-2 bg-[#3B7D3C] text-white px-5 py-2 rounded-xl font-medium text-sm hover:bg-[#2d6130] transition-colors shadow-sm">
-              <PlusOutlined /> Add Fill-Up
-            </button>
-          </Link>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Date range pills */}
+            {[["From", 0], ["To", 1]].map(([label, idx]) => (
+              <label
+                key={label}
+                className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 cursor-pointer hover:border-gray-300 transition-colors"
+              >
+                <span className="text-xs text-gray-400 font-medium select-none">{label}</span>
+                <input
+                  type="date"
+                  value={dateRange[idx]}
+                  min={idx === 1 ? dateRange[0] || undefined : undefined}
+                  onChange={e => {
+                    const next = [...dateRange];
+                    next[idx] = e.target.value;
+                    if (idx === 0 && next[1] && e.target.value > next[1]) next[1] = "";
+                    setDateRange(next);
+                  }}
+                  className="text-xs text-gray-600 outline-none border-none bg-transparent w-[92px] cursor-pointer"
+                />
+              </label>
+            ))}
+
+            <Link to="/addFuel">
+              <button className="flex items-center gap-2 bg-[#3B7D3C] text-white px-5 py-2 rounded-xl font-medium text-sm hover:bg-[#2d6130] transition-colors shadow-sm">
+                <PlusOutlined /> Add Fill-Up
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Summary stats */}
@@ -189,9 +230,19 @@ const FuelList = () => {
                 }
               />
             </div>
+          ) : visibleLogs.length === 0 ? (
+            <div className="p-10 text-center">
+              <p className="text-[#5A5A5A] text-sm">No fill-ups found in this date range.</p>
+              <button
+                onClick={() => setDateRange(["", ""])}
+                className="mt-2 text-xs text-[#3B7D3C] underline"
+              >
+                Clear filter
+              </button>
+            </div>
           ) : (
             <div className="divide-y divide-[#E8F0E8]">
-              {logs.map((log) => (
+              {visibleLogs.map((log) => (
                 <div key={log.id} className="px-6 py-4 hover:bg-[#F5F5F0] transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     {/* Left: main info */}

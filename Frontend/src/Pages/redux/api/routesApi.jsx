@@ -1710,6 +1710,143 @@ updateMileago: builder.mutation({
       }),
       invalidatesTags: ["components", "terms"],
     }),
+
+    // ── Vendors ───────────────────────────────────────────────────────────────
+    getVendors: builder.query({
+      query: (params = {}) => {
+        const q = new URLSearchParams(params).toString();
+        return { url: `/vendors${q ? `?${q}` : ""}`, method: "GET" };
+      },
+      providesTags: ["vendors"],
+    }),
+    getSingleVendor: builder.query({
+      query: (id) => ({ url: `/vendors/${id}`, method: "GET" }),
+      providesTags: ["vendors"],
+    }),
+    addVendor: builder.mutation({
+      query: (data) => ({ url: "/vendors", method: "POST", body: data }),
+      invalidatesTags: ["vendors"],
+    }),
+    updateVendor: builder.mutation({
+      query: ({ id, data }) => ({ url: `/vendors/${id}`, method: "PUT", body: data }),
+      invalidatesTags: ["vendors"],
+    }),
+    deleteVendor: builder.mutation({
+      query: (id) => ({ url: `/vendors/${id}`, method: "DELETE" }),
+      invalidatesTags: ["vendors"],
+    }),
+    toggleVendorFavorite: builder.mutation({
+      query: (id) => ({ url: `/vendors/${id}/favorite`, method: "PATCH" }),
+      invalidatesTags: ["vendors"],
+    }),
+    findNearbyVendors: builder.query({
+      query: ({ lat, lng, radius }) => ({
+        url: `/vendors/places/nearby?lat=${lat}&lng=${lng}${radius ? `&radius=${radius}` : ""}`,
+        method: "GET",
+      }),
+    }),
+    saveGooglePlace: builder.mutation({
+      query: (data) => ({ url: "/vendors/places/save", method: "POST", body: data }),
+      invalidatesTags: ["vendors"],
+    }),
+
+    // ── Document Vault ────────────────────────────────────────────────────────
+    getDocuments: builder.query({
+      query: (params = {}) => {
+        const q = new URLSearchParams(params).toString();
+        return { url: `/documents${q ? `?${q}` : ""}`, method: "GET" };
+      },
+      providesTags: ["documents"],
+    }),
+    getSingleDocument: builder.query({
+      query: (id) => ({ url: `/documents/${id}`, method: "GET" }),
+      providesTags: ["documents"],
+    }),
+    uploadDocument: builder.mutation({
+      query: (formData) => ({ url: "/documents", method: "POST", body: formData }),
+      invalidatesTags: ["documents"],
+    }),
+    updateDocument: builder.mutation({
+      query: ({ id, formData }) => ({ url: `/documents/${id}`, method: "PUT", body: formData }),
+      invalidatesTags: ["documents"],
+    }),
+    deleteDocument: builder.mutation({
+      query: (id) => ({ url: `/documents/${id}`, method: "DELETE" }),
+      invalidatesTags: ["documents"],
+    }),
+
+    // ── Packing Lists ─────────────────────────────────────────────────────────
+    getPackingLists: builder.query({
+      query: () => ({ url: "/packing-lists", method: "GET" }),
+      providesTags: ["packingLists"],
+    }),
+    getSinglePackingList: builder.query({
+      query: (id) => ({ url: `/packing-lists/${id}`, method: "GET" }),
+      providesTags: ["packingLists"],
+    }),
+    addPackingList: builder.mutation({
+      query: (data) => ({ url: "/packing-lists", method: "POST", body: data }),
+      invalidatesTags: ["packingLists"],
+    }),
+    updatePackingList: builder.mutation({
+      query: ({ id, data }) => ({ url: `/packing-lists/${id}`, method: "PATCH", body: data }),
+      invalidatesTags: ["packingLists"],
+    }),
+    deletePackingList: builder.mutation({
+      query: (id) => ({ url: `/packing-lists/${id}`, method: "DELETE" }),
+      invalidatesTags: ["packingLists"],
+    }),
+    uncheckAllPackingList: builder.mutation({
+      query: (id) => ({ url: `/packing-lists/${id}/uncheck-all`, method: "POST" }),
+      invalidatesTags: ["packingLists"],
+    }),
+    duplicatePackingList: builder.mutation({
+      query: (id) => ({ url: `/packing-lists/${id}/duplicate`, method: "POST" }),
+      invalidatesTags: ["packingLists"],
+    }),
+
+    // ── Campgrounds ───────────────────────────────────────────────────────────
+    getCampgrounds: builder.query({
+      query: (params = {}) => {
+        const q = new URLSearchParams(params).toString();
+        return { url: `/campgrounds${q ? `?${q}` : ""}`, method: "GET" };
+      },
+      providesTags: ["campgrounds"],
+    }),
+    getSingleCampground: builder.query({
+      query: (id) => ({ url: `/campgrounds/${id}`, method: "GET" }),
+      providesTags: ["campgrounds"],
+    }),
+    addCampground: builder.mutation({
+      query: (formData) => ({ url: "/campgrounds", method: "POST", body: formData }),
+      invalidatesTags: ["campgrounds"],
+    }),
+    updateCampground: builder.mutation({
+      query: ({ id, formData }) => ({ url: `/campgrounds/${id}`, method: "PUT", body: formData }),
+      invalidatesTags: ["campgrounds"],
+    }),
+    deleteCampground: builder.mutation({
+      query: (id) => ({ url: `/campgrounds/${id}`, method: "DELETE" }),
+      invalidatesTags: ["campgrounds"],
+    }),
+    toggleCampgroundFavorite: builder.mutation({
+      query: (id) => ({ url: `/campgrounds/${id}/favorite`, method: "PATCH" }),
+      invalidatesTags: ["campgrounds"],
+    }),
+
+    // ── Checklist Templates ───────────────────────────────────────────────────
+    createChecklistFromTemplate: builder.mutation({
+      query: (data) => ({ url: "/checklist/from-template", method: "POST", body: data }),
+      invalidatesTags: ["terms"],
+    }),
+    duplicateChecklist: builder.mutation({
+      query: (id) => ({ url: `/checklist/${id}/duplicate`, method: "POST" }),
+      invalidatesTags: ["terms"],
+    }),
+    uncheckAllChecklist: builder.mutation({
+      query: (id) => ({ url: `/checklist/${id}/uncheck-all`, method: "POST" }),
+      invalidatesTags: ["terms"],
+    }),
   }),
 });
 
@@ -1872,4 +2009,38 @@ export const {
   useClearAllNotificationsMutation,
   useGenerateNotificationsMutation,
   useUpdateNotificationPreferencesMutation,
+  // Vendors
+  useGetVendorsQuery,
+  useGetSingleVendorQuery,
+  useAddVendorMutation,
+  useUpdateVendorMutation,
+  useDeleteVendorMutation,
+  useToggleVendorFavoriteMutation,
+  useFindNearbyVendorsQuery,
+  useSaveGooglePlaceMutation,
+  // Documents
+  useGetDocumentsQuery,
+  useGetSingleDocumentQuery,
+  useUploadDocumentMutation,
+  useUpdateDocumentMutation,
+  useDeleteDocumentMutation,
+  // Packing Lists
+  useGetPackingListsQuery,
+  useGetSinglePackingListQuery,
+  useAddPackingListMutation,
+  useUpdatePackingListMutation,
+  useDeletePackingListMutation,
+  useUncheckAllPackingListMutation,
+  useDuplicatePackingListMutation,
+  // Campgrounds
+  useGetCampgroundsQuery,
+  useGetSingleCampgroundQuery,
+  useAddCampgroundMutation,
+  useUpdateCampgroundMutation,
+  useDeleteCampgroundMutation,
+  useToggleCampgroundFavoriteMutation,
+  // Checklist Templates
+  useCreateChecklistFromTemplateMutation,
+  useDuplicateChecklistMutation,
+  useUncheckAllChecklistMutation,
 } = routesApi;

@@ -144,6 +144,19 @@ import ComponentAdd from "../Pages/hvac/ComponentAdd";
 import ComponentUpdate from "../Pages/hvac/ComponentUpdate";
 import NotificationCenter from "../Pages/notifications/NotificationCenter";
 import NotificationDetail from "../Pages/notifications/NotificationDetail";
+import VendorList from "../Pages/vendors/VendorList";
+import AddVendor from "../Pages/vendors/AddVendor";
+import EditVendor from "../Pages/vendors/EditVendor";
+import FindVendors from "../Pages/vendors/FindVendors";
+import DocumentVault from "../Pages/documentVault/DocumentVault";
+import UploadDocument from "../Pages/documentVault/UploadDocument";
+import PackingLists from "../Pages/packingList/PackingLists";
+import AddPackingList from "../Pages/packingList/AddPackingList";
+import PackingListDetails from "../Pages/packingList/PackingListDetails";
+import CampgroundList from "../Pages/campground/CampgroundList";
+import AddCampground from "../Pages/campground/AddCampground";
+import EditCampground from "../Pages/campground/EditCampground";
+import Onboarding from "../Pages/onboarding/Onboarding";
 
 export const router = createBrowserRouter([
   {
@@ -912,8 +925,29 @@ export const router = createBrowserRouter([
       { path: "/components/:type", element: <ProtectedRoute><ComponentsList /></ProtectedRoute> },
       { path: "/components/:type/add", element: <ProtectedRoute><ComponentAdd /></ProtectedRoute> },
       { path: "/components/:type/update/:id", element: <ProtectedRoute><ComponentUpdate /></ProtectedRoute> },
+
+      // Vendors
+      { path: "/vendors", element: <ProtectedRoute><VendorList /></ProtectedRoute> },
+      { path: "/addVendor", element: <ProtectedRoute><AddVendor /></ProtectedRoute> },
+      { path: "/editVendor/:id", element: <ProtectedRoute><EditVendor /></ProtectedRoute> },
+      { path: "/findVendors", element: <ProtectedRoute><FindVendors /></ProtectedRoute> },
+
+      // Document Vault
+      { path: "/documents", element: <ProtectedRoute><DocumentVault /></ProtectedRoute> },
+      { path: "/uploadDocument", element: <ProtectedRoute><UploadDocument /></ProtectedRoute> },
+
+      // Packing Lists
+      { path: "/packingLists", element: <ProtectedRoute><PackingLists /></ProtectedRoute> },
+      { path: "/addPackingList", element: <ProtectedRoute><AddPackingList /></ProtectedRoute> },
+      { path: "/packingListDetails/:id", element: <ProtectedRoute><PackingListDetails /></ProtectedRoute> },
+
+      // Campgrounds
+      { path: "/campgrounds", element: <ProtectedRoute><CampgroundList /></ProtectedRoute> },
+      { path: "/addCampground", element: <ProtectedRoute><AddCampground /></ProtectedRoute> },
+      { path: "/editCampground/:id", element: <ProtectedRoute><EditCampground /></ProtectedRoute> },
     ],
   },
+  { path: "/onboarding", element: <Onboarding /> },
   {
     path: "/auth/login",
     element: <Login></Login>,

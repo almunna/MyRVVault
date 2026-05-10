@@ -175,6 +175,7 @@ const NewMaintenace = () => {
   const [completing, setCompleting] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState("");
+  const [dateRange, setDateRange] = useState(["", ""]);
 
   // Sort all items chronologically — oldest due date first, no-date items go last
   const items = [...(data?.data || [])].sort((a, b) => {
@@ -189,8 +190,21 @@ const NewMaintenace = () => {
   const overdue  = items.filter(i => i.status === "overdue").length;
   const upcoming = items.filter(i => i.status === "upcoming").length;
 
-  // Apply status filter
-  const visibleItems = statusFilter ? items.filter(i => i.status === statusFilter) : items;
+  const hasDateRange = !!(dateRange[0] && dateRange[1]);
+
+  // Apply status + date range filter
+  const visibleItems = items.filter(i => {
+    if (statusFilter && i.status !== statusFilter) return false;
+    if (hasDateRange) {
+      const d = i.dateOfMaintenance ? new Date(i.dateOfMaintenance) : null;
+      if (!d) return false;
+      const start = new Date(dateRange[0]);
+      const end = new Date(dateRange[1]);
+      end.setHours(23, 59, 59, 999);
+      if (d < start || d > end) return false;
+    }
+    return true;
+  });
 
   const toggleFilter = (key) => setStatusFilter(prev => prev === key ? "" : key);
 
@@ -269,8 +283,8 @@ const NewMaintenace = () => {
               <h1 className="text-3xl font-bold text-[#1A1A1A]">Maintenance Schedule</h1>
             </div>
             <p className="text-[#5A5A5A] text-sm ml-4 pl-3">
-              {statusFilter
-                ? <>{visibleItems.length} {statusFilter} record{visibleItems.length !== 1 ? "s" : ""} <span className="text-[#3B7D3C]">(filtered)</span></>
+              {(statusFilter || hasDateRange)
+                ? <>{visibleItems.length} record{visibleItems.length !== 1 ? "s" : ""} <span className="text-[#3B7D3C]">(filtered)</span></>
                 : <>{items.length} record{items.length !== 1 ? "s" : ""}
                     {overdue > 0 && <span className="text-red-600 font-semibold"> · {overdue} overdue</span>}
                     {upcoming > 0 && <span className="text-amber-600 font-semibold"> · {upcoming} due soon</span>}
@@ -292,27 +306,52 @@ const NewMaintenace = () => {
           </div>
         </div>
 
-        {/* Clickable filter pills */}
+        {/* Filter row: status pills + date range picker */}
         {items.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {[
-              { label: "All",       key: "",          count: items.length,                                          base: "bg-white text-[#1A1A1A] border border-[#E8F0E8]",       active: "bg-[#1A1A1A] text-white border-[#1A1A1A]" },
-              { label: "Overdue",   key: "overdue",   count: overdue,                                               base: "bg-red-50 text-red-700 border border-red-200",           active: "bg-red-600 text-white border-red-600" },
-              { label: "Due Soon",  key: "upcoming",  count: upcoming,                                              base: "bg-amber-50 text-amber-700 border border-amber-200",     active: "bg-amber-500 text-white border-amber-500" },
-              { label: "Scheduled", key: "scheduled", count: items.filter(i => i.status === "scheduled").length,   base: "bg-blue-50 text-blue-700 border border-blue-200",        active: "bg-blue-600 text-white border-blue-600" },
-              { label: "Completed", key: "completed", count: items.filter(i => i.status === "completed").length,   base: "bg-green-50 text-green-700 border border-green-200",     active: "bg-green-600 text-white border-green-600" },
-            ].filter(p => p.count > 0).map(p => {
-              const isActive = statusFilter === p.key;
-              return (
-                <button
-                  key={p.label}
-                  onClick={() => toggleFilter(p.key)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 ${isActive ? p.active : p.base} hover:opacity-80`}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "All",       key: "",          count: items.length,                                          base: "bg-white text-[#1A1A1A] border border-[#E8F0E8]",       active: "bg-[#1A1A1A] text-white border-[#1A1A1A]" },
+                { label: "Overdue",   key: "overdue",   count: overdue,                                               base: "bg-red-50 text-red-700 border border-red-200",           active: "bg-red-600 text-white border-red-600" },
+                { label: "Due Soon",  key: "upcoming",  count: upcoming,                                              base: "bg-amber-50 text-amber-700 border border-amber-200",     active: "bg-amber-500 text-white border-amber-500" },
+                { label: "Scheduled", key: "scheduled", count: items.filter(i => i.status === "scheduled").length,   base: "bg-blue-50 text-blue-700 border border-blue-200",        active: "bg-blue-600 text-white border-blue-600" },
+                { label: "Completed", key: "completed", count: items.filter(i => i.status === "completed").length,   base: "bg-green-50 text-green-700 border border-green-200",     active: "bg-green-600 text-white border-green-600" },
+              ].filter(p => p.count > 0).map(p => {
+                const isActive = statusFilter === p.key;
+                return (
+                  <button
+                    key={p.label}
+                    onClick={() => toggleFilter(p.key)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-200 ${isActive ? p.active : p.base} hover:opacity-80`}
+                  >
+                    {p.label}: {p.count}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              {[["From", 0], ["To", 1]].map(([label, idx]) => (
+                <label
+                  key={label}
+                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-1.5 cursor-pointer hover:border-gray-300 transition-colors"
                 >
-                  {p.label}: {p.count}
-                </button>
-              );
-            })}
+                  <span className="text-xs text-gray-400 font-medium select-none">{label}</span>
+                  <input
+                    type="date"
+                    value={dateRange[idx]}
+                    min={idx === 1 ? dateRange[0] || undefined : undefined}
+                    onChange={e => {
+                      const next = [...dateRange];
+                      next[idx] = e.target.value;
+                      if (idx === 0 && next[1] && e.target.value > next[1]) next[1] = "";
+                      setDateRange(next);
+                    }}
+                    className="text-xs text-gray-600 outline-none border-none bg-transparent w-[92px] cursor-pointer"
+                  />
+                </label>
+              ))}
+            </div>
           </div>
         )}
 
@@ -332,9 +371,12 @@ const NewMaintenace = () => {
           </div>
         ) : visibleItems.length === 0 ? (
           <div className="bg-white border border-[#E8F0E8] rounded-2xl p-10 text-center shadow-sm">
-            <p className="text-[#5A5A5A] text-sm">No {statusFilter} records found.</p>
-            <button onClick={() => setStatusFilter("")} className="mt-2 text-xs text-[#3B7D3C] underline">
-              Show all
+            <p className="text-[#5A5A5A] text-sm">No records match the current filters.</p>
+            <button
+              onClick={() => { setStatusFilter(""); setDateRange(["", ""]); }}
+              className="mt-2 text-xs text-[#3B7D3C] underline"
+            >
+              Clear all filters
             </button>
           </div>
         ) : (

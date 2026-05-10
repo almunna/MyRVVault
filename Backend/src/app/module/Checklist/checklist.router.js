@@ -1,32 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const {
-    createChecklist,
-    getAllChecklists,
-    getChecklist,
-    updateChecklist,
-    deleteChecklist,
-    bulkUpdateItems,
-    uncheckAllItems
+    createChecklist, getAllChecklists, getChecklist, updateChecklist,
+    deleteChecklist, bulkUpdateItems, uncheckAllItems,
+    duplicateChecklist, createFromTemplate
 } = require('./checklist.controller');
 const { authenticateUser } = require('../../middleware/auth.middleware');
 
-// Checklist routes
 router.route('/')
     .post(authenticateUser, createChecklist)
     .get(authenticateUser, getAllChecklists);
 
+router.post('/from-template', authenticateUser, createFromTemplate);
+
 router.route('/:id')
     .get(authenticateUser, getChecklist)
-    .patch(authenticateUser, updateChecklist)  // Changed to PATCH
+    .patch(authenticateUser, updateChecklist)
     .post(authenticateUser, deleteChecklist);
 
-// Bulk items operations
-router.route('/:id/items')
-    .patch(authenticateUser, bulkUpdateItems);  // PATCH for items operations
-
-// Uncheck all items in a checklist
-router.route('/:id/uncheck-all')
-    .post(authenticateUser, uncheckAllItems);
+router.patch('/:id/items', authenticateUser, bulkUpdateItems);
+router.post('/:id/uncheck-all', authenticateUser, uncheckAllItems);
+router.post('/:id/duplicate', authenticateUser, duplicateChecklist);
 
 module.exports = router;

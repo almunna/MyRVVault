@@ -207,3 +207,89 @@ exports.uncheckAllItems = asyncHandler(async (req, res) => {
     const updated = docToObj(await col().doc(req.params.id).get());
     res.status(200).json({ success: true, message: 'All items unchecked successfully', data: updated });
 });
+
+
+const PRE_DEPARTURE_ITEMS = [
+    { name: 'Check tire pressure' }, { name: 'Test brake lights & turn signals' },
+    { name: 'Check engine oil level' }, { name: 'Check coolant level' },
+    { name: 'Inspect slide-outs (retracted)' }, { name: 'Disconnect shore power' },
+    { name: 'Disconnect water & sewer hoses' }, { name: 'Secure all cabinets & drawers' },
+    { name: 'Retract awning' }, { name: 'Stow outdoor furniture' },
+    { name: 'Turn off propane' }, { name: 'Level blocks & jacks stored' },
+    { name: 'Hitch & safety chains checked' }, { name: 'Pack emergency kit' },
+    { name: 'Route & destination confirmed' }, { name: 'Campground reservation confirmed' }
+];
+
+const SETUP_ITEMS = [
+    { name: 'Level the RV (front-to-back, side-to-side)' }, { name: 'Deploy stabilizer jacks' },
+    { name: 'Connect shore power' }, { name: 'Connect fresh water hose' },
+    { name: 'Connect sewer hose' }, { name: 'Turn on propane' },
+    { name: 'Extend slide-outs' }, { name: 'Set up awning' },
+    { name: 'Set out outdoor furniture' }, { name: 'Test smoke & CO detectors' },
+    { name: 'Turn on refrigerator' }, { name: 'Set thermostat' },
+    { name: 'Set up outdoor rug / mat' }
+];
+
+
+exports.duplicateChecklist = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists) throw new ApiError('Checklist not found', 404);
+
+    const checklist = docToObj(snap);
+    if (checklist.user !== userId) throw new ApiError('Checklist not found', 404);
+
+    const newData = {
+        title: `${checklist.title} (Copy)`,
+        rvId: checklist.rvId,
+        user: userId,
+        items: (checklist.items || []).map(item => ({ ...item, id: makeId(), status: false })),
+        templateType: checklist.templateType || null,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
+
+    const ref = await col().add(newData);
+    const newSnap = await ref.get();
+
+    res.status(201).json({ success: true, message: 'Checklist duplicated', data: docToObj(newSnap) });
+});
+
+
+exports.createFromTemplate = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { templateType, rvId } = req.body;
+
+    const selectedRvId = await getSelectedRvByUserId(userId);
+    const targetRvId = rvId || selectedRvId;
+    if (!targetRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
+
+    let items = [];
+    let title = '';
+
+    if (templateType === 'pre_departure') {
+        items = PRE_DEPARTURE_ITEMS;
+        title = 'Pre-Departure Checklist';
+    } else if (templateType === 'setup') {
+        items = SETUP_ITEMS;
+        title = 'RV Setup Checklist';
+    } else {
+        throw new ApiError('templateType must be pre_departure or setup', 400);
+    }
+
+    const data = {
+        title,
+        rvId: targetRvId,
+        user: userId,
+        items: normalizeItems(items),
+        templateType,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
+
+    const ref = await col().add(data);
+    const snap = await ref.get();
+
+    res.status(201).json({ success: true, message: `${title} created from template`, data: docToObj(snap) });
+});

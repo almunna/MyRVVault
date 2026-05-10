@@ -4,10 +4,10 @@ const { ApiError } = require('../../../errors/errorHandler');
 const { docToObj, queryToArr } = require('../../../utils/firestoreHelper');
 const getSelectedRvByUserId = require('../../../utils/currentRv');
 const QueryBuilder = require('../../../builder/queryBuilder');
+const { bucket } = require('../../../config/db');
 
 const col = () => db.collection('trips');
 
-// Simple ID generator for nested state visits (replaces Mongoose subdoc _id)
 const makeId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 const normalizeStates = (states = [], startDate) =>
@@ -21,19 +21,39 @@ const normalizeStates = (states = [], startDate) =>
 
 exports.createTrip = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    const { title, description, startDate, endDate, tripName, states, rvId } = req.body;
+    const {
+        title, description, startDate, endDate, tripName, states, rvId,
+        startOdometer, endOdometer, notes
+    } = req.body;
 
     const selectedRvId = await getSelectedRvByUserId(userId);
     const targetRvId = rvId || selectedRvId;
     if (!targetRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
 
+    const startOdo = startOdometer ? Number(startOdometer) : null;
+    const endOdo = endOdometer ? Number(endOdometer) : null;
+    const milesDriven = startOdo && endOdo && endOdo > startOdo ? endOdo - startOdo : null;
+
+    const photos = (req.files || []).map(f => ({
+        url: f.location,
+        filename: f.filename,
+        mimetype: f.mimetype
+    }));
+
     const data = {
         title,
-        description,
+        description: description || notes || null,
         startDate,
-        endDate,
+        endDate: endDate || null,
         tripName: tripName ? tripName.toUpperCase() : '',
         states: normalizeStates(states || [], startDate),
+        startOdometer: startOdo,
+        endOdometer: endOdo,
+        milesDriven,
+        fuelUsed: null,
+        tripMpg: null,
+        fuelLogIds: [],
+        photos,
         rvId: targetRvId,
         user: userId,
         isActive: true,
@@ -58,7 +78,6 @@ exports.getAllTrips = asyncHandler(async (req, res) => {
         .paginate()
         .execute();
 
-    // Manual populate: attach RV name/licensePlate for each trip
     const rvCache = {};
     const data = await Promise.all(result.data.map(async trip => {
         if (!trip.rvId) return trip;
@@ -91,12 +110,17 @@ exports.getTrip = asyncHandler(async (req, res) => {
         return res.status(200).json({ success: true, message: 'Trip not found', data: null });
     }
 
-    // Populate RV info
     if (trip.rvId) {
         const rvSnap = await db.collection('rvs').doc(trip.rvId).get();
         if (rvSnap.exists) {
             trip.rvId = { id: trip.rvId, name: rvSnap.data().name, licensePlate: rvSnap.data().licensePlate };
         }
+    }
+
+    // Populate linked fuel logs
+    if (trip.fuelLogIds && trip.fuelLogIds.length > 0) {
+        const fuelSnaps = await Promise.all(trip.fuelLogIds.map(id => db.collection('fuelLogs').doc(id).get()));
+        trip.fuelLogs = fuelSnaps.filter(s => s.exists).map(s => docToObj(s));
     }
 
     res.status(200).json({ success: true, data: trip });
@@ -105,7 +129,7 @@ exports.getTrip = asyncHandler(async (req, res) => {
 
 exports.updateTrip = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    const { title, description, startDate, endDate, tripName, states } = req.body;
+    const { title, description, startDate, endDate, tripName, states, startOdometer, endOdometer, notes } = req.body;
 
     const snap = await col().doc(req.params.id).get();
     if (!snap.exists || !snap.data().isActive) throw new ApiError('Trip not found', 404);
@@ -116,11 +140,26 @@ exports.updateTrip = asyncHandler(async (req, res) => {
     const updates = { updatedAt: FieldValue.serverTimestamp() };
     if (title !== undefined) updates.title = title;
     if (description !== undefined) updates.description = description;
+    if (notes !== undefined) updates.description = notes;
     if (startDate !== undefined) updates.startDate = startDate;
     if (endDate !== undefined) updates.endDate = endDate;
     if (tripName !== undefined) updates.tripName = tripName.toUpperCase();
-    if (states !== undefined) {
-        updates.states = normalizeStates(states, startDate || trip.startDate);
+    if (states !== undefined) updates.states = normalizeStates(states, startDate || trip.startDate);
+
+    const newStartOdo = startOdometer !== undefined ? (startOdometer ? Number(startOdometer) : null) : trip.startOdometer;
+    const newEndOdo = endOdometer !== undefined ? (endOdometer ? Number(endOdometer) : null) : trip.endOdometer;
+
+    if (startOdometer !== undefined) updates.startOdometer = newStartOdo;
+    if (endOdometer !== undefined) updates.endOdometer = newEndOdo;
+
+    if (newStartOdo && newEndOdo && newEndOdo > newStartOdo) {
+        updates.milesDriven = newEndOdo - newStartOdo;
+    }
+
+    // Append new photos
+    if (req.files && req.files.length > 0) {
+        const newPhotos = req.files.map(f => ({ url: f.location, filename: f.filename, mimetype: f.mimetype }));
+        updates.photos = [...(trip.photos || []), ...newPhotos];
     }
 
     await col().doc(req.params.id).update(updates);
@@ -142,6 +181,182 @@ exports.deleteTrip = asyncHandler(async (req, res) => {
     await col().doc(req.params.id).update({ isActive: false, updatedAt: FieldValue.serverTimestamp() });
 
     res.status(200).json({ success: true, message: 'Trip deleted successfully', data: {} });
+});
+
+
+exports.linkFuelLog = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { fuelLogId } = req.body;
+
+    if (!fuelLogId) throw new ApiError('fuelLogId is required', 400);
+
+    const [tripSnap, fuelSnap] = await Promise.all([
+        col().doc(req.params.id).get(),
+        db.collection('fuelLogs').doc(fuelLogId).get()
+    ]);
+
+    if (!tripSnap.exists || !tripSnap.data().isActive) throw new ApiError('Trip not found', 404);
+    const trip = docToObj(tripSnap);
+    if (trip.user !== userId) throw new ApiError('Trip not found', 404);
+
+    if (!fuelSnap.exists || fuelSnap.data().user !== userId) throw new ApiError('Fuel log not found', 404);
+
+    // Update fuel log IDs on trip
+    const fuelLogIds = Array.from(new Set([...(trip.fuelLogIds || []), fuelLogId]));
+
+    // Recalculate fuelUsed and tripMpg
+    const allFuelSnaps = await Promise.all(fuelLogIds.map(id => db.collection('fuelLogs').doc(id).get()));
+    const allFuelLogs = allFuelSnaps.filter(s => s.exists).map(s => s.data());
+    const fuelUsed = allFuelLogs.reduce((sum, l) => sum + (l.gallons || 0), 0);
+    const milesDriven = trip.milesDriven || 0;
+    const tripMpg = fuelUsed > 0 && milesDriven > 0 ? parseFloat((milesDriven / fuelUsed).toFixed(2)) : null;
+
+    await col().doc(req.params.id).update({
+        fuelLogIds,
+        fuelUsed: parseFloat(fuelUsed.toFixed(2)),
+        tripMpg,
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    // Also update the fuel log to reference this trip
+    await db.collection('fuelLogs').doc(fuelLogId).update({ tripId: req.params.id });
+
+    const updated = docToObj(await col().doc(req.params.id).get());
+    res.status(200).json({ success: true, message: 'Fuel log linked to trip', data: updated });
+});
+
+
+exports.unlinkFuelLog = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { fuelLogId } = req.params;
+
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists || !snap.data().isActive) throw new ApiError('Trip not found', 404);
+    const trip = docToObj(snap);
+    if (trip.user !== userId) throw new ApiError('Trip not found', 404);
+
+    const fuelLogIds = (trip.fuelLogIds || []).filter(id => id !== fuelLogId);
+
+    const allFuelSnaps = await Promise.all(fuelLogIds.map(id => db.collection('fuelLogs').doc(id).get()));
+    const allFuelLogs = allFuelSnaps.filter(s => s.exists).map(s => s.data());
+    const fuelUsed = allFuelLogs.reduce((sum, l) => sum + (l.gallons || 0), 0);
+    const milesDriven = trip.milesDriven || 0;
+    const tripMpg = fuelUsed > 0 && milesDriven > 0 ? parseFloat((milesDriven / fuelUsed).toFixed(2)) : null;
+
+    await col().doc(req.params.id).update({
+        fuelLogIds,
+        fuelUsed: parseFloat(fuelUsed.toFixed(2)),
+        tripMpg,
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    res.status(200).json({ success: true, message: 'Fuel log unlinked from trip' });
+});
+
+
+exports.deletePhoto = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { filename } = req.body;
+
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists || !snap.data().isActive) throw new ApiError('Trip not found', 404);
+    const trip = docToObj(snap);
+    if (trip.user !== userId) throw new ApiError('Trip not found', 404);
+
+    if (filename) await bucket.file(filename).delete().catch(() => {});
+    const photos = (trip.photos || []).filter(p => p.filename !== filename);
+    await col().doc(req.params.id).update({ photos, updatedAt: FieldValue.serverTimestamp() });
+
+    res.status(200).json({ success: true, message: 'Photo removed', data: { photos } });
+});
+
+
+exports.getActiveTrip = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const snap = await col()
+        .where('user', '==', userId)
+        .where('isActive', '==', true)
+        .where('tripStatus', '==', 'in_progress')
+        .limit(1)
+        .get();
+    if (snap.empty) return res.status(200).json({ success: true, data: null });
+    res.status(200).json({ success: true, data: docToObj(snap.docs[0]) });
+});
+
+
+exports.startTrip = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { title, startOdometer } = req.body;
+
+    if (!title) throw new ApiError('Trip title is required', 400);
+
+    const existing = await col()
+        .where('user', '==', userId)
+        .where('isActive', '==', true)
+        .where('tripStatus', '==', 'in_progress')
+        .limit(1)
+        .get();
+    if (!existing.empty) throw new ApiError('You already have a trip in progress. End it before starting a new one.', 400);
+
+    const selectedRvId = await getSelectedRvByUserId(userId);
+    if (!selectedRvId) throw new ApiError('No RV selected. Please select an RV first.', 400);
+
+    const startOdo = startOdometer ? Number(startOdometer) : null;
+    const startDate = new Date().toISOString().split('T')[0];
+
+    const data = {
+        title,
+        tripStatus: 'in_progress',
+        startDate,
+        endDate: null,
+        startOdometer: startOdo,
+        endOdometer: null,
+        milesDriven: null,
+        description: null,
+        states: [],
+        photos: [],
+        fuelLogIds: [],
+        fuelUsed: null,
+        tripMpg: null,
+        rvId: selectedRvId,
+        user: userId,
+        isActive: true,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+    };
+
+    const ref = await col().add(data);
+    const snap = await ref.get();
+    res.status(201).json({ success: true, message: 'Trip started!', data: docToObj(snap) });
+});
+
+
+exports.endTrip = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+    const { endOdometer } = req.body;
+
+    const snap = await col().doc(req.params.id).get();
+    if (!snap.exists || !snap.data().isActive) throw new ApiError('Trip not found', 404);
+    const trip = docToObj(snap);
+    if (trip.user !== userId) throw new ApiError('Trip not found', 404);
+    if (trip.tripStatus !== 'in_progress') throw new ApiError('This trip is not in progress', 400);
+
+    const endOdo = endOdometer ? Number(endOdometer) : null;
+    const milesDriven = trip.startOdometer && endOdo && endOdo > trip.startOdometer
+        ? endOdo - trip.startOdometer
+        : trip.milesDriven;
+    const endDate = new Date().toISOString().split('T')[0];
+
+    await col().doc(req.params.id).update({
+        tripStatus: 'completed',
+        endDate,
+        endOdometer: endOdo,
+        milesDriven: milesDriven || null,
+        updatedAt: FieldValue.serverTimestamp()
+    });
+
+    const updated = docToObj(await col().doc(req.params.id).get());
+    res.status(200).json({ success: true, message: 'Trip completed!', data: updated });
 });
 
 
@@ -226,8 +441,6 @@ exports.getTripsByState = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
     const state = req.params.state.toUpperCase();
 
-    // Firestore doesn't support array-contains for nested objects with field matching,
-    // so fetch all active trips and filter JS-side
     const snap = await col().where('user', '==', userId).where('isActive', '==', true).get();
     const trips = queryToArr(snap);
 

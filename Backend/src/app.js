@@ -86,6 +86,10 @@ app.use('/api/smart-suggestions', require('./app/module/SmartSuggestions/smartSu
 app.use('/api/component', require('./app/module/Component/component.router'));
 app.use('/api/notifications', require('./app/module/Notification/notification.router'));
 app.use('/api/other', require('./app/module/Other/other.router'));
+app.use('/api/vendors', require('./app/module/Vendor/vendor.router'));
+app.use('/api/documents', require('./app/module/DocumentVault/documentVault.router'));
+app.use('/api/packing-lists', require('./app/module/PackingList/packingList.router'));
+app.use('/api/campgrounds', require('./app/module/Campground/campground.router'));
 
 app.get('/', (req, res) => {
   res.send("All ok")
