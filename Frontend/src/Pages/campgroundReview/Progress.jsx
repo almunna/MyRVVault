@@ -85,8 +85,11 @@ const Progress = () => {
   const { data: campData } = useGetCampQuery();
   const mapRef = useRef(null);
 
+  const apiKey = import.meta.env.VITE_GOOGLE_MAP_KEY;
+  console.log("Google Maps API Key in use:", apiKey);
+
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_KEY,
+    googleMapsApiKey: apiKey,
   });
 
   const markers = useMemo(() => {
