@@ -1344,13 +1344,10 @@ const routesApi = baseApi.injectEndpoints({
     }),
 
     deleteCheckList: builder.mutation({
-      query: ({id,data}) => {
-        return {
-          url: `/checklist/${id}/uncheck-all`,
-          method: "POST",
-          body: data,
-        };
-      },
+      query: (id) => ({
+        url: `/checklist/${id}`,
+        method: "DELETE",
+      }),
       invalidatesTags: ["terms"],
     }),
 

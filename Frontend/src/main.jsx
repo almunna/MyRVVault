@@ -8,6 +8,7 @@ import { store } from './Pages/redux/store.jsx'
 import { Provider } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { ConfigProvider } from 'antd'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1060609171550-heaj69620uag6bpqeu6jvjpsqm7eq83e.apps.googleusercontent.com';
 
@@ -15,8 +16,18 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Provider store={store}>
-        <RouterProvider router={router} />
-        <Toaster position="top-right" richColors />
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: '#3B7D3C',
+              colorLink: '#3B7D3C',
+              borderRadius: 8,
+            },
+          }}
+        >
+          <RouterProvider router={router} />
+          <Toaster position="top-right" richColors />
+        </ConfigProvider>
       </Provider>
     </GoogleOAuthProvider>
   </StrictMode>,

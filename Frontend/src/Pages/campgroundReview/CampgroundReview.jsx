@@ -12,14 +12,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
 
 const formatDuration = (startDate) => {
   if (!startDate) return "";
-  const start = new Date(startDate);
-  const now = new Date();
-  const days = Math.floor((now - start) / 86400000);
-  if (days === 0) return "Started today";
-  return `Day ${days + 1}`;
+  const days = Math.floor((new Date() - new Date(startDate)) / 86400000);
+  return days === 0 ? "Started today" : `Day ${days + 1}`;
 };
 
-const ActiveTripWidget = () => {
+const inputClass =
+  "w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-[#1A1A1A] placeholder-gray-400 focus:border-[#3B7D3C] focus:ring-1 focus:ring-[#3B7D3C] transition-all duration-200";
+
+const ActiveTripWidget = ({ onTripChange }) => {
   const [activeTrip, setActiveTrip] = useState(undefined);
   const [startModal, setStartModal] = useState(false);
   const [endModal, setEndModal] = useState(false);
@@ -59,6 +59,7 @@ const ActiveTripWidget = () => {
         setTripTitle("");
         setStartOdo("");
         setActiveTrip(data.data);
+        onTripChange?.();
       } else {
         message.error(data.message || "Failed to start trip");
       }
@@ -84,6 +85,7 @@ const ActiveTripWidget = () => {
         setEndModal(false);
         setEndOdo("");
         setActiveTrip(null);
+        onTripChange?.();
       } else {
         message.error(data.message || "Failed to end trip");
       }
@@ -99,17 +101,17 @@ const ActiveTripWidget = () => {
   if (activeTrip) {
     return (
       <>
-        <div className="mb-4 bg-green-950 border border-green-700 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-6 bg-white border border-[#E8F0E8] rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
+            <div className="w-2.5 h-2.5 bg-[#3B7D3C] rounded-full animate-pulse flex-shrink-0" />
             <div>
-              <p className="text-green-300 font-semibold text-sm">{activeTrip.title}</p>
-              <p className="text-green-600 text-xs">{formatDuration(activeTrip.startDate)} · In progress</p>
+              <p className="text-[#1A1A1A] font-semibold text-sm">{activeTrip.title}</p>
+              <p className="text-[#5A5A5A] text-xs">{formatDuration(activeTrip.startDate)} · Trip in progress</p>
             </div>
           </div>
           <button
             onClick={() => setEndModal(true)}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 border border-red-300 text-red-500 px-4 py-1.5 rounded-xl text-sm font-medium hover:bg-red-50 transition-all duration-200"
           >
             <FiSquare size={12} /> End Trip
           </button>
@@ -117,22 +119,23 @@ const ActiveTripWidget = () => {
 
         <Modal
           open={endModal}
-          title={<span className="text-[#F9B038]">End Trip — {activeTrip.title}</span>}
-          okText={submitting ? "Ending..." : "Complete Trip"}
-          okButtonProps={{ style: { background: "#F9B038", borderColor: "#F9B038", color: "#000" }, disabled: submitting }}
+          title={<span className="text-[#1A1A1A] font-semibold">End Trip — {activeTrip.title}</span>}
+          okText={submitting ? "Ending…" : "Complete Trip"}
+          okButtonProps={{ disabled: submitting }}
           onOk={handleEnd}
           onCancel={() => { setEndModal(false); setEndOdo(""); }}
         >
-          <p className="text-gray-600 text-sm mb-4">Record your final odometer reading to auto-calculate miles driven.</p>
-          <label className="block text-sm font-medium mb-1">End Odometer (optional)</label>
+          <p className="text-[#5A5A5A] text-sm mb-4">Record your final odometer reading to auto-calculate miles driven.</p>
+          <label className="block text-sm font-medium text-[#5A5A5A] mb-1">End Odometer (optional)</label>
           <Input
             type="number"
             placeholder="e.g., 45800"
             value={endOdo}
+            className={inputClass}
             onChange={e => setEndOdo(e.target.value)}
           />
           {activeTrip.startOdometer && endOdo && Number(endOdo) > activeTrip.startOdometer && (
-            <p className="text-green-600 text-sm mt-2">
+            <p className="text-[#3B7D3C] text-sm mt-2 font-medium">
               Miles driven: {Number(endOdo) - activeTrip.startOdometer} mi
             </p>
           )}
@@ -143,14 +146,14 @@ const ActiveTripWidget = () => {
 
   return (
     <>
-      <div className="mb-4 border border-dashed border-gray-600 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-gray-400 text-sm">
+      <div className="mb-6 bg-white border border-dashed border-[#C8D8C8] rounded-2xl px-5 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[#9E9E9E] text-sm">
           <FiMapPin size={14} />
           <span>No trip in progress</span>
         </div>
         <button
           onClick={() => setStartModal(true)}
-          className="flex items-center gap-2 bg-[#F9B038] text-black px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-500 transition-colors"
+          className="flex items-center gap-2 bg-[#3B7D3C] text-white px-4 py-1.5 rounded-xl text-sm font-semibold hover:bg-[#2d6130] transition-all duration-200 shadow-sm"
         >
           <FiPlay size={12} /> Start Trip
         </button>
@@ -158,28 +161,30 @@ const ActiveTripWidget = () => {
 
       <Modal
         open={startModal}
-        title={<span className="text-[#F9B038]">Start New Trip</span>}
-        okText={submitting ? "Starting..." : "Start Trip"}
-        okButtonProps={{ style: { background: "#F9B038", borderColor: "#F9B038", color: "#000" }, disabled: submitting }}
+        title={<span className="text-[#1A1A1A] font-semibold">Start New Trip</span>}
+        okText={submitting ? "Starting…" : "Start Trip"}
+        okButtonProps={{ disabled: submitting }}
         onOk={handleStart}
         onCancel={() => { setStartModal(false); setTripTitle(""); setStartOdo(""); }}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 mt-2">
           <div>
-            <label className="block text-sm font-medium mb-1">Trip Name *</label>
+            <label className="block text-sm font-medium text-[#5A5A5A] mb-1">Trip Name *</label>
             <Input
               placeholder="e.g., Summer Road Trip 2026"
               value={tripTitle}
+              className={inputClass}
               onChange={e => setTripTitle(e.target.value)}
               onPressEnter={handleStart}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Starting Odometer (optional)</label>
+            <label className="block text-sm font-medium text-[#5A5A5A] mb-1">Starting Odometer (optional)</label>
             <Input
               type="number"
               placeholder="e.g., 45000"
               value={startOdo}
+              className={inputClass}
               onChange={e => setStartOdo(e.target.value)}
             />
           </div>
@@ -225,24 +230,41 @@ const CampgroundReview = () => {
   };
 
   return (
-    <div className="container m-auto px-3 lg:px-0 mt-6">
-      <ActiveTripWidget />
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-[#F9B038] text-black"
-                : "border border-[#F9B038] text-[#F9B038]"
-            }`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8 py-10">
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-1 h-8 bg-[#D4872D] rounded-full" />
+            <h1 className="text-3xl font-bold text-[#1A1A1A]">My Trips</h1>
+          </div>
+          <p className="text-[#5A5A5A] text-sm ml-4 pl-3">
+            Track your RV travels across the US.
+          </p>
+        </div>
+
+        <ActiveTripWidget onTripChange={() => {}} />
+
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "bg-[#3B7D3C] text-white shadow-sm"
+                  : "border border-[#E0E0E0] text-[#5A5A5A] hover:border-[#3B7D3C] hover:text-[#3B7D3C]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {renderContent()}
       </div>
-      {renderContent()}
     </div>
   );
 };

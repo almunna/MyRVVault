@@ -16,7 +16,7 @@ router.post('/from-template', authenticateUser, createFromTemplate);
 router.route('/:id')
     .get(authenticateUser, getChecklist)
     .patch(authenticateUser, updateChecklist)
-    .post(authenticateUser, deleteChecklist);
+    .delete(authenticateUser, deleteChecklist);
 
 router.patch('/:id/items', authenticateUser, bulkUpdateItems);
 router.post('/:id/uncheck-all', authenticateUser, uncheckAllItems);

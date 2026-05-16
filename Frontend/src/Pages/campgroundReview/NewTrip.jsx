@@ -1,14 +1,25 @@
-import { Button, DatePicker, Form, Input, Select, message } from "antd";
+import { DatePicker, Form, Input, Select, message, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import compressImage from "../../utils/compressImage";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  FileTextOutlined,
+  CalendarOutlined,
+  DashboardOutlined,
+  GlobalOutlined,
+  PictureOutlined,
+  MinusCircleOutlined,
+} from "@ant-design/icons";
 import { FiCamera, FiX } from "react-icons/fi";
+import compressImage from "../../utils/compressImage";
+
+dayjs.extend(customParseFormat);
 
 const { Option } = Select;
+const dateFormat = "MM/DD/YYYY";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
 
-const states = {
+const US_STATES = {
   ALABAMA: "Alabama", ALASKA: "Alaska", ARIZONA: "Arizona", ARKANSAS: "Arkansas",
   CALIFORNIA: "California", COLORADO: "Colorado", CONNECTICUT: "Connecticut", DELAWARE: "Delaware",
   FLORIDA: "Florida", GEORGIA: "Georgia", HAWAII: "Hawaii", IDAHO: "Idaho",
@@ -24,10 +35,24 @@ const states = {
   WISCONSIN: "Wisconsin", WYOMING: "Wyoming",
 };
 
-dayjs.extend(customParseFormat);
-const dateFormat = "MM/DD/YYYY";
+const fieldLabel = (text) => (
+  <span className="text-sm font-medium text-[#5A5A5A]">{text}</span>
+);
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
+const inputClass =
+  "w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-[#1A1A1A] placeholder-gray-400 focus:border-[#3B7D3C] focus:ring-1 focus:ring-[#3B7D3C] transition-all duration-200";
+
+const Card = ({ icon, title, children }) => (
+  <div className="bg-white border border-[#E8F0E8] rounded-2xl p-6 mb-5 shadow-sm">
+    <div className="flex items-center gap-2 mb-5 pb-4 border-b border-[#E8F0E8]">
+      <div className="w-8 h-8 rounded-lg bg-[#E8F0E8] flex items-center justify-center">
+        <span className="text-[#3B7D3C] text-sm">{icon}</span>
+      </div>
+      <h2 className="text-base font-semibold text-[#1A1A1A]">{title}</h2>
+    </div>
+    {children}
+  </div>
+);
 
 const NewTrip = () => {
   const [form] = Form.useForm();
@@ -36,8 +61,8 @@ const NewTrip = () => {
   const [previews, setPreviews] = useState([]);
 
   useEffect(() => {
-    const currentStates = form.getFieldValue("states");
-    if (!currentStates || currentStates.length === 0) {
+    const current = form.getFieldValue("states");
+    if (!current || current.length === 0) {
       form.setFieldsValue({ states: [{}] });
     }
   }, [form]);
@@ -61,7 +86,7 @@ const NewTrip = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const statesData = (values.states || []).map(item => ({
-        state: states[item.state] || item.state,
+        state: US_STATES[item.state] || item.state,
         status: item.status,
       }));
 
@@ -83,12 +108,13 @@ const NewTrip = () => {
       const data = await res.json();
 
       if (data.success) {
-        message.success(data.message || "Trip added successfully!");
+        message.success(data.message || "Trip saved successfully!");
         form.resetFields();
+        form.setFieldsValue({ states: [{}] });
         setPhotos([]);
         setPreviews([]);
       } else {
-        message.error(data.message || "Failed to add trip");
+        message.error(data.message || "Failed to save trip");
       }
     } catch {
       message.error("Something went wrong!");
@@ -98,122 +124,164 @@ const NewTrip = () => {
   };
 
   return (
-    <div className="max-w-4xl m-auto">
+    <div className="max-w-2xl">
       <Form form={form} onFinish={handleSubmit} layout="vertical">
-        <Form.Item label={<span style={{ color: "#F9B038" }}>Trip Title</span>} name="title">
-          <Input className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2" placeholder="Trip title" />
-        </Form.Item>
 
-        <Form.Item label={<span style={{ color: "#F9B038" }}>Description / Notes</span>} name="feedback">
-          <Input.TextArea className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2" rows={3} placeholder="Write trip details..." />
-        </Form.Item>
+        {/* Trip Details */}
+        <Card icon={<FileTextOutlined />} title="Trip Details">
+          <div className="space-y-4">
+            <Form.Item
+              label={fieldLabel("Trip Title")}
+              name="title"
+              className="mb-0"
+              rules={[{ required: true, message: "Trip title is required" }]}
+            >
+              <Input size="large" className={inputClass} placeholder="e.g. Summer Road Trip 2026" />
+            </Form.Item>
+            <Form.Item
+              label={fieldLabel("Description / Notes")}
+              name="feedback"
+              className="mb-0"
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="Write trip details…"
+                className="w-full rounded-lg border border-[#E0E0E0] text-[#1A1A1A] placeholder-gray-400 focus:border-[#3B7D3C] resize-none"
+              />
+            </Form.Item>
+          </div>
+        </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Form.Item label={<span style={{ color: "#F9B038" }}>Start Date</span>} name="start">
-            <DatePicker className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2" format={dateFormat} placeholder="Start Date" />
-          </Form.Item>
-          <Form.Item label={<span style={{ color: "#F9B038" }}>End Date</span>} name="end">
-            <DatePicker className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2" format={dateFormat} placeholder="End Date" />
-          </Form.Item>
-        </div>
+        {/* Dates */}
+        <Card icon={<CalendarOutlined />} title="Dates">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item label={fieldLabel("Start Date")} name="start" className="mb-0">
+              <DatePicker size="large" format={dateFormat} placeholder="MM/DD/YYYY" className="w-full rounded-lg border-[#E0E0E0]" />
+            </Form.Item>
+            <Form.Item label={fieldLabel("End Date")} name="end" className="mb-0">
+              <DatePicker size="large" format={dateFormat} placeholder="MM/DD/YYYY" className="w-full rounded-lg border-[#E0E0E0]" />
+            </Form.Item>
+          </div>
+        </Card>
 
         {/* Mileage */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Form.Item label={<span style={{ color: "#F9B038" }}>Start Odometer (miles)</span>} name="startOdometer">
-            <Input
-              type="number"
-              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-              placeholder="e.g., 45000"
-            />
-          </Form.Item>
-          <Form.Item label={<span style={{ color: "#F9B038" }}>End Odometer (miles)</span>} name="endOdometer">
-            <Input
-              type="number"
-              className="w-full bg-transparent border border-[#F9B038] text-[#F9B038] py-2"
-              placeholder="e.g., 45800"
-            />
-          </Form.Item>
-        </div>
-        <p className="text-gray-500 text-xs -mt-3 mb-4">Miles driven will be auto-calculated from odometer readings.</p>
+        <Card icon={<DashboardOutlined />} title="Odometer">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item label={fieldLabel("Start Odometer (miles)")} name="startOdometer" className="mb-0">
+              <Input size="large" type="number" className={inputClass} placeholder="e.g. 45000" />
+            </Form.Item>
+            <Form.Item label={fieldLabel("End Odometer (miles)")} name="endOdometer" className="mb-0">
+              <Input size="large" type="number" className={inputClass} placeholder="e.g. 45800" />
+            </Form.Item>
+          </div>
+          <p className="text-xs text-[#9E9E9E] mt-3">Miles driven will be auto-calculated from odometer readings.</p>
+        </Card>
 
         {/* States */}
-        <Form.List name="states">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map(({ key, name, ...restField }, index) => (
-                <div key={key} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start">
-                  <Form.Item
-                    {...restField}
-                    name={[name, "state"]}
-                    label={index === 0 ? <span style={{ color: "#F9B038" }}>State</span> : ""}
-                    rules={[{ required: true, message: "Select a state" }]}
-                  >
-                    <Select placeholder="Select State" className="w-full custom-select" style={{ height: "40px" }}>
-                      {Object.entries(states).map(([key, value]) => (
-                        <Option key={key} value={key}>{value}</Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                  <div className="flex items-start gap-2">
+        <Card icon={<GlobalOutlined />} title="States Visited">
+          <Form.List name="states">
+            {(fields, { add, remove }) => (
+              <div className="space-y-3">
+                {fields.map(({ key, name, ...restField }, index) => (
+                  <div key={key} className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                     <Form.Item
                       {...restField}
-                      name={[name, "status"]}
-                      label={index === 0 ? <span style={{ color: "#F9B038" }}>Visit Status</span> : ""}
-                      rules={[{ required: true, message: "Select status" }]}
-                      className="flex-1"
+                      name={[name, "state"]}
+                      label={index === 0 ? fieldLabel("State") : null}
+                      rules={[{ required: true, message: "Select a state" }]}
+                      className="mb-0"
                     >
-                      <Select placeholder="Select Status" className="w-full custom-select" style={{ height: "40px" }}>
-                        <Option value="CAMPED">Camped</Option>
-                        <Option value="TRAVELED_THROUGH">Traveled Through</Option>
-                        <Option value="PLANNING">Planning To Visit</Option>
-                        <Option value="NOT_VISITED">Not Yet Visited</Option>
+                      <Select size="large" placeholder="Select State" className="w-full">
+                        {Object.entries(US_STATES).map(([key, value]) => (
+                          <Option key={key} value={key}>{value}</Option>
+                        ))}
                       </Select>
                     </Form.Item>
-                    {fields.length > 1 && (
-                      <MinusCircleOutlined className="text-red-500 text-xl mt-2" onClick={() => remove(name)} />
-                    )}
+                    <div className="flex items-start gap-2">
+                      <Form.Item
+                        {...restField}
+                        name={[name, "status"]}
+                        label={index === 0 ? fieldLabel("Visit Status") : null}
+                        rules={[{ required: true, message: "Select status" }]}
+                        className="mb-0 flex-1"
+                      >
+                        <Select size="large" placeholder="Select Status" className="w-full">
+                          <Option value="CAMPED">Camped</Option>
+                          <Option value="TRAVELED_THROUGH">Traveled Through</Option>
+                          <Option value="PLANNING">Planning To Visit</Option>
+                          <Option value="NOT_VISITED">Not Yet Visited</Option>
+                        </Select>
+                      </Form.Item>
+                      {fields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => remove(name)}
+                          className="text-[#9E9E9E] hover:text-red-500 transition flex-shrink-0 mt-1 p-1"
+                        >
+                          <MinusCircleOutlined style={{ fontSize: 18 }} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <Form.Item>
-                <button onClick={() => add()} className="border rounded-md w-full border-[#F9B038] text-[#F9B038] px-4 py-2">
+                ))}
+                <button
+                  type="button"
+                  onClick={() => add()}
+                  className="mt-1 w-full py-2 rounded-xl border border-dashed border-[#C8D8C8] text-[#3B7D3C] text-sm font-medium hover:border-[#3B7D3C] hover:bg-[#E8F0E8]/30 transition-all duration-200"
+                >
                   + Add another state
                 </button>
-              </Form.Item>
-            </>
-          )}
-        </Form.List>
+              </div>
+            )}
+          </Form.List>
+        </Card>
 
-        {/* Photo Upload */}
-        <div className="mb-6">
-          <label className="text-[#F9B038] text-sm font-medium block mb-2">Trip Photos</label>
-          <div className="flex flex-wrap gap-2">
+        {/* Photos */}
+        <Card icon={<PictureOutlined />} title="Trip Photos">
+          <div className="flex flex-wrap gap-3">
             {previews.map((src, idx) => (
               <div key={idx} className="relative">
-                <img src={src} alt="" className="w-20 h-20 object-cover rounded-lg border border-gray-600" />
-                <button type="button" onClick={() => removePhoto(idx)}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
-                  <FiX size={8} />
+                <img src={src} alt="" className="w-24 h-24 object-cover rounded-xl border border-[#E0E0E0]" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(idx)}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
+                >
+                  <FiX size={10} />
                 </button>
               </div>
             ))}
-            <label className="w-20 h-20 border-2 border-dashed border-[#F9B038] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-yellow-900/10 transition-colors">
-              <FiCamera size={20} className="text-[#F9B038]" />
-              <span className="text-xs text-[#F9B038] mt-1">Add</span>
+            <label className="w-24 h-24 border-2 border-dashed border-[#E0E0E0] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#3B7D3C] hover:bg-[#E8F0E8]/30 transition-all duration-200">
+              <FiCamera size={22} className="text-[#9E9E9E]" />
+              <span className="text-xs text-[#9E9E9E] mt-1">Add Photo</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoChange} />
             </label>
           </div>
-        </div>
+          <p className="text-xs text-[#9E9E9E] mt-3">Images are compressed automatically.</p>
+        </Card>
 
-        <Form.Item className="pt-4">
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => { form.resetFields(); form.setFieldsValue({ states: [{}] }); setPhotos([]); setPreviews([]); }}
+            className="flex-1 py-3 rounded-xl border border-[#E0E0E0] text-[#5A5A5A] font-medium text-sm hover:border-[#3B7D3C] hover:text-[#3B7D3C] transition-all duration-200"
+          >
+            Clear
+          </button>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#F9B038] py-2 text-black font-semibold disabled:opacity-60 rounded-md"
+            className={`flex-1 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
+              loading
+                ? "bg-[#3B7D3C]/70 text-white cursor-not-allowed"
+                : "bg-[#3B7D3C] text-white hover:bg-[#2d6130] shadow-sm hover:shadow-md"
+            }`}
           >
-            {loading ? "Saving..." : "Save Trip"}
+            {loading ? <><Spin size="small" /><span>Saving…</span></> : "Save Trip"}
           </button>
-        </Form.Item>
+        </div>
+
       </Form>
     </div>
   );

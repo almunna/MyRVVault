@@ -1,15 +1,24 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { useGetCampQuery } from "../redux/api/routesApi";
 
-const mapContainerStyle = {
-  width: "100%",
-  height: "400px",
-};
-
-const center = {
-  lat: 39.8283, // USA center
-  lng: -98.5795,
+const mapContainerStyle = { width: "100%", height: "560px" };
+const MAP_CENTER = { lat: 39.8283, lng: -98.5795 };
+const MAP_ZOOM = 4;
+const mapOptions = {
+  center: MAP_CENTER,
+  zoom: MAP_ZOOM,
+  scrollwheel: false,
+  gestureHandling: "cooperative",
+  mapTypeControl: true,
+  mapTypeControlOptions: {
+    position: 3,
+  },
+  fullscreenControl: false,
+  restriction: {
+    latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
+    strictBounds: true,
+  },
 };
 
 export const STATE_COORDINATES = {
@@ -65,71 +74,92 @@ export const STATE_COORDINATES = {
   WYOMING: { lat: 42.7475, lng: -107.2085 },
 };
 
-const STATUS_COLOR = {
-  CAMPED: "green",
-  TRAVELED_THROUGH: "orange",
-  PLANNING: "blue",
-  NOT_VISITED: "red",
+const STATUS_STYLE = {
+  CAMPED:           { color: "green",  label: "Camped" },
+  TRAVELED_THROUGH: { color: "blue",   label: "Traveled Through" },
+  PLANNING:         { color: "purple", label: "Planning" },
+  NOT_VISITED:      { color: "red",    label: "Not Visited" },
 };
 
 const Progress = () => {
   const { data: campData } = useGetCampQuery();
+  const mapRef = useRef(null);
 
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_KEY, 
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_KEY,
   });
 
   const markers = useMemo(() => {
     if (!campData?.data) return [];
-
     return campData.data.flatMap((trip) =>
       trip.states.map((s) => {
-        const coord = STATE_COORDINATES[s.state];
+        const key = (s.state || "").toUpperCase().replace(/ /g, "_");
+        const coord = STATE_COORDINATES[key];
         if (!coord) return null;
-
-        return {
-          ...coord,
-          status: s.status,
-          state: s.state,
-        };
+        return { lat: coord.lat, lng: coord.lng, status: s.status, state: s.state };
       })
     ).filter(Boolean);
   }, [campData]);
 
-  if (!isLoaded) return <p>Loading Map...</p>;
+  if (!isLoaded) {
+    return (
+      <div
+        className="bg-white border border-[#E8F0E8] rounded-2xl shadow-sm flex items-center justify-center"
+        style={{ height: 560 }}
+      >
+        <p className="text-[#5A5A5A] text-sm">Loading map…</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-4">
-      <h1 className="text-lg font-semibold text-[#F9B038] mb-4">
-        Your Progress
-      </h1>
+    <div>
+      <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4">Your Progress</h2>
 
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        zoom={4}
-        center={center}
+      <div
+        className="bg-white border border-[#E8F0E8] rounded-2xl overflow-hidden shadow-sm"
+        style={{ isolation: "isolate" }}
       >
-        {markers.map((marker, index) => (
-          <Marker
-            key={index}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            icon={{
-              url: `http://maps.google.com/mapfiles/ms/icons/${STATUS_COLOR[marker.status]}-dot.png`,
-            }}
-            title={`${marker.state} - ${marker.status}`}
-          />
-        ))}
-      </GoogleMap>
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          options={mapOptions}
+          onLoad={(map) => {
+            mapRef.current = map;
+            map.setCenter(MAP_CENTER);
+            map.setZoom(MAP_ZOOM);
+          }}
+        >
+          {markers.map((m, i) => {
+            const style = STATUS_STYLE[m.status] || { color: "gray", label: m.status };
+            return (
+              <Marker
+                key={i}
+                position={{ lat: m.lat, lng: m.lng }}
+                title={`${m.state} — ${style.label}`}
+                icon={{
+                  url: `http://maps.google.com/mapfiles/ms/icons/${style.color}-dot.png`,
+                }}
+              />
+            );
+          })}
+        </GoogleMap>
+      </div>
 
       {/* Legend */}
-      <div className="mt-4 text-sm text-[#F9B038]">
-        <p className="font-semibold mb-2">Map Legend</p>
-        <ul className="space-y-1">
-          <li>🟢 Camped</li>
-          <li>🟠 Traveled Through</li>
-          <li>🔵 Planning</li>
-          <li>🔴 Not Visited</li>
-        </ul>
+      <div className="mt-4 bg-white border border-[#E8F0E8] rounded-xl p-4 shadow-sm">
+        <p className="text-sm font-semibold text-[#1A1A1A] mb-2">Map Legend</p>
+        <div className="flex flex-wrap gap-4">
+          {Object.entries(STATUS_STYLE).map(([key, { color, label }]) => (
+            <div key={key} className="flex items-center gap-1.5 text-sm text-[#5A5A5A]">
+              <img
+                src={`http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`}
+                alt={label}
+                className="w-4 h-4 object-contain"
+              />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -156,6 +156,7 @@ import PackingListDetails from "../Pages/packingList/PackingListDetails";
 import CampgroundList from "../Pages/campground/CampgroundList";
 import AddCampground from "../Pages/campground/AddCampground";
 import EditCampground from "../Pages/campground/EditCampground";
+import CampgroundDetail from "../Pages/campground/CampgroundDetail";
 import Onboarding from "../Pages/onboarding/Onboarding";
 
 export const router = createBrowserRouter([
@@ -943,6 +944,7 @@ export const router = createBrowserRouter([
 
       // Campgrounds
       { path: "/campgrounds", element: <ProtectedRoute><CampgroundList /></ProtectedRoute> },
+      { path: "/campgrounds/:id", element: <ProtectedRoute><CampgroundDetail /></ProtectedRoute> },
       { path: "/addCampground", element: <ProtectedRoute><AddCampground /></ProtectedRoute> },
       { path: "/editCampground/:id", element: <ProtectedRoute><EditCampground /></ProtectedRoute> },
     ],

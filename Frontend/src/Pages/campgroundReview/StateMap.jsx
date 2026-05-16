@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { message, Tooltip, Modal, Select } from "antd";
+import { message, Tooltip, Modal } from "antd";
 
-const { Option } = Select;
-
-// US state positions on a simplified grid (row, col) — each state has abbreviated name
 const STATE_GRID = [
-  // row 0
   { abbr: "AK", name: "Alaska", row: 7, col: 0 },
   { abbr: "HI", name: "Hawaii", row: 7, col: 2 },
-  // Top rows
   { abbr: "WA", name: "Washington", row: 0, col: 0 },
   { abbr: "MT", name: "Montana", row: 0, col: 1 },
   { abbr: "ND", name: "North Dakota", row: 0, col: 2 },
@@ -60,11 +55,11 @@ const STATE_GRID = [
 ];
 
 const STATUS_COLORS = {
-  camped: "#F9B038",
+  camped: "#3B7D3C",
   traveled_through: "#60a5fa",
   planning: "#a78bfa",
-  manual: "#34d399",
-  none: "#374151",
+  manual: "#D4872D",
+  none: "#E8E8E4",
 };
 
 const STATUS_LABELS = {
@@ -80,7 +75,6 @@ const StateMap = () => {
   const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState(null);
   const [addModal, setAddModal] = useState({ open: false, abbr: "", name: "" });
-  const [addStatus, setAddStatus] = useState("manual");
 
   const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
   const token = localStorage.getItem("accessToken");
@@ -108,7 +102,6 @@ const StateMap = () => {
     };
     fetchStats();
 
-    // Load manual states from localStorage
     const saved = localStorage.getItem("manualVisitedStates");
     if (saved) {
       try { setManualStates(new Set(JSON.parse(saved))); } catch {}
@@ -134,18 +127,13 @@ const StateMap = () => {
   };
 
   const getStatusText = (abbr) => {
-    if (manualStates.has(abbr)) return "manually";
+    if (manualStates.has(abbr)) return "manually marked";
     const stat = stateStats[abbr];
     if (!stat) return "not visited";
     if (stat.camped > 0) return `camped ${stat.camped}x`;
     if (stat.traveled > 0) return "traveled through";
     if (stat.planning > 0) return "planning to visit";
     return "not visited";
-  };
-
-  const handleStateClick = (state) => {
-    setAddModal({ open: true, abbr: state.abbr, name: state.name });
-    setAddStatus("manual");
   };
 
   const toggleManualState = () => {
@@ -163,45 +151,51 @@ const StateMap = () => {
 
   const visited = Object.keys(stateStats).length + manualStates.size;
   const totalStates = 50;
-
   const maxRow = Math.max(...STATE_GRID.map(s => s.row));
   const maxCol = Math.max(...STATE_GRID.map(s => s.col));
 
-  if (loading) return <div className="text-center py-10 text-[#F9B038]">Loading map...</div>;
+  if (loading) {
+    return (
+      <div className="py-10 flex items-center justify-center">
+        <p className="text-[#5A5A5A]">Loading map…</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       {/* Stats bar */}
       <div className="flex flex-wrap gap-4 mb-6">
-        <div className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-center">
-          <p className="text-3xl font-bold text-[#F9B038]">{visited}</p>
-          <p className="text-gray-400 text-sm">States Visited</p>
+        <div className="bg-white border border-[#E8F0E8] rounded-xl px-5 py-3 text-center shadow-sm">
+          <p className="text-3xl font-bold text-[#3B7D3C]">{visited}</p>
+          <p className="text-[#5A5A5A] text-xs mt-0.5">States Visited</p>
         </div>
-        <div className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-center">
-          <p className="text-3xl font-bold text-gray-300">{totalStates - visited}</p>
-          <p className="text-gray-400 text-sm">Remaining</p>
+        <div className="bg-white border border-[#E8F0E8] rounded-xl px-5 py-3 text-center shadow-sm">
+          <p className="text-3xl font-bold text-[#1A1A1A]">{totalStates - visited}</p>
+          <p className="text-[#5A5A5A] text-xs mt-0.5">Remaining</p>
         </div>
-        <div className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-center">
-          <p className="text-3xl font-bold text-[#F9B038]">{Math.round((visited / totalStates) * 100)}%</p>
-          <p className="text-gray-400 text-sm">Complete</p>
+        <div className="bg-white border border-[#E8F0E8] rounded-xl px-5 py-3 text-center shadow-sm">
+          <p className="text-3xl font-bold text-[#D4872D]">{Math.round((visited / totalStates) * 100)}%</p>
+          <p className="text-[#5A5A5A] text-xs mt-0.5">Complete</p>
         </div>
+
         {/* Legend */}
         <div className="flex flex-wrap gap-3 items-center ml-auto">
           {Object.entries(STATUS_LABELS).map(([key, label]) => (
-            <div key={key} className="flex items-center gap-1.5 text-xs text-gray-400">
-              <div className="w-4 h-4 rounded" style={{ background: STATUS_COLORS[key] }} />
+            <div key={key} className="flex items-center gap-1.5 text-xs text-[#5A5A5A]">
+              <div className="w-3.5 h-3.5 rounded" style={{ background: STATUS_COLORS[key] }} />
               <span>{label}</span>
             </div>
           ))}
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <div className="w-4 h-4 rounded bg-gray-700 border border-gray-600" />
+          <div className="flex items-center gap-1.5 text-xs text-[#5A5A5A]">
+            <div className="w-3.5 h-3.5 rounded bg-[#E8E8E4] border border-[#E0E0E0]" />
             <span>Not Visited</span>
           </div>
         </div>
       </div>
 
       {/* Grid Map */}
-      <div className="overflow-x-auto">
+      <div className="bg-white border border-[#E8F0E8] rounded-2xl p-5 shadow-sm overflow-x-auto">
         <div
           className="inline-grid gap-1"
           style={{
@@ -219,13 +213,13 @@ const StateMap = () => {
               >
                 <Tooltip title={`${state.name} — ${getStatusText(state.abbr)}`} placement="top">
                   <button
-                    onClick={() => handleStateClick(state)}
+                    onClick={() => setAddModal({ open: true, abbr: state.abbr, name: state.name })}
                     className="w-12 h-12 rounded-lg text-xs font-bold transition-all duration-200 hover:scale-110 hover:z-10 relative border"
                     style={{
                       background: color,
-                      borderColor: isVisited ? "rgba(255,255,255,0.2)" : "#4B5563",
-                      color: isVisited ? (color === STATUS_COLORS.none ? "#9CA3AF" : "#000") : "#9CA3AF",
-                      boxShadow: hovered === state.abbr ? `0 0 0 2px white` : "none",
+                      borderColor: isVisited ? "rgba(0,0,0,0.1)" : "#D0D0CC",
+                      color: isVisited ? "#fff" : "#9E9E9E",
+                      boxShadow: hovered === state.abbr ? `0 0 0 2px #3B7D3C` : "none",
                     }}
                     onMouseEnter={() => setHovered(state.abbr)}
                     onMouseLeave={() => setHovered(null)}
@@ -239,21 +233,22 @@ const StateMap = () => {
         </div>
       </div>
 
-      <p className="text-gray-500 text-xs mt-4">Click any state to manually mark as visited or update status.</p>
+      <p className="text-[#9E9E9E] text-xs mt-3">Click any state to manually mark as visited or update status.</p>
 
       <Modal
         open={addModal.open}
-        title={<span className="text-[#F9B038]">{addModal.name}</span>}
-        onOk={toggleManualState}
+        title={<span className="text-[#1A1A1A] font-semibold">{addModal.name}</span>}
         okText={manualStates.has(addModal.abbr) ? "Remove from Visited" : "Mark as Visited"}
-        okButtonProps={{ style: { background: "#F9B038", borderColor: "#F9B038", color: "#000" } }}
+        onOk={toggleManualState}
         onCancel={() => setAddModal({ open: false, abbr: "", name: "" })}
       >
-        <p className="text-gray-600 mb-3">Current status: <strong>{getStatusText(addModal.abbr)}</strong></p>
-        <p className="text-sm text-gray-500">
+        <p className="text-[#5A5A5A] text-sm mb-2">
+          Current status: <strong className="text-[#1A1A1A]">{getStatusText(addModal.abbr)}</strong>
+        </p>
+        <p className="text-xs text-[#9E9E9E]">
           {manualStates.has(addModal.abbr)
             ? "This state is manually marked as visited. Click the button to remove it."
-            : "Manually toggle the visited status for this state. Trip-linked visits are updated automatically."}
+            : "Manually toggle the visited status for this state. Trip-linked visits update automatically."}
         </p>
       </Modal>
     </div>

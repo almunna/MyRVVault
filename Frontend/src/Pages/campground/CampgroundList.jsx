@@ -1,155 +1,200 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { message, Modal, Rate } from "antd";
-import { FiMapPin, FiCalendar, FiPlus, FiTrash2, FiEdit2, FiStar } from "react-icons/fi";
+import { FiMapPin, FiCalendar, FiPlus, FiTrash2, FiEdit2, FiStar, FiClock } from "react-icons/fi";
+import {
+  useGetCampgroundsQuery,
+  useDeleteCampgroundMutation,
+  useToggleCampgroundFavoriteMutation,
+} from "../redux/api/routesApi";
 
 const formatDate = (d) => {
   if (!d) return "";
-  try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
-  catch { return d; }
+  try {
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return d;
+  }
+};
+
+const stayDuration = (cg) => {
+  if (!cg.checkIn || !cg.checkOut) return null;
+  const days = Math.round((new Date(cg.checkOut) - new Date(cg.checkIn)) / (1000 * 60 * 60 * 24));
+  return days > 0 ? `${days} night${days > 1 ? "s" : ""}` : null;
 };
 
 const CampgroundList = () => {
   const navigate = useNavigate();
-  const [campgrounds, setCampgrounds] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState(null);
 
-  const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5002/api";
-  const token = localStorage.getItem("accessToken");
+  const { data, isLoading, isError } = useGetCampgroundsQuery({});
+  const [deleteCampground] = useDeleteCampgroundMutation();
+  const [toggleFavorite] = useToggleCampgroundFavoriteMutation();
 
-  const fetchCampgrounds = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/campgrounds`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setCampgrounds(data.data || []);
-    } catch {
-      message.error("Failed to load campgrounds");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const campgrounds = data?.data || [];
 
-  useEffect(() => { fetchCampgrounds(); }, []);
-
-  const toggleFavorite = async (id, e) => {
+  const handleToggleFavorite = async (id, e) => {
     e.preventDefault();
+    e.stopPropagation();
     try {
-      await fetch(`${BASE_URL}/campgrounds/${id}/favorite`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchCampgrounds();
+      await toggleFavorite(id).unwrap();
     } catch {
-      message.error("Failed to update");
+      message.error("Failed to update favorite");
     }
   };
 
-  const confirmDelete = async () => {
+  const handleDelete = async () => {
     try {
-      await fetch(`${BASE_URL}/campgrounds/${deleteId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await deleteCampground(deleteId).unwrap();
       message.success("Campground deleted");
       setDeleteId(null);
-      fetchCampgrounds();
     } catch {
       message.error("Failed to delete");
     }
   };
 
-  const stayDuration = (cg) => {
-    if (!cg.checkIn || !cg.checkOut) return null;
-    const days = Math.round((new Date(cg.checkOut) - new Date(cg.checkIn)) / (1000 * 60 * 60 * 24));
-    return days > 0 ? `${days} night${days > 1 ? "s" : ""}` : null;
-  };
+  if (isLoading) return (
+    <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+      <p className="text-[#5A5A5A]">Loading…</p>
+    </div>
+  );
+
+  if (isError) return (
+    <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+      <p className="text-red-500">Failed to load campgrounds.</p>
+    </div>
+  );
 
   return (
-    <div className="container m-auto py-8 px-3 lg:px-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-[#F9B038]">Campground History</h1>
-        <Link to="/addCampground">
-          <button className="flex items-center gap-2 bg-[#F9B038] py-2 px-4 text-black rounded-md font-medium">
-            <FiPlus size={14} /> Add Campground
-          </button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[#F5F5F0]">
+      <div className="max-w-site mx-auto px-4 lg:px-6 2xl:px-8 py-10">
 
-      {loading && <div className="text-center py-10 text-[#F9B038]">Loading...</div>}
-
-      {!loading && campgrounds.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <FiMapPin size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="text-lg">No campgrounds recorded yet.</p>
-          <p className="text-sm mt-1">Start adding campgrounds from your travels.</p>
+        {/* Page Header */}
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-1 h-8 bg-[#D4872D] rounded-full" />
+              <h1 className="text-3xl font-bold text-[#1A1A1A]">Campground History</h1>
+            </div>
+            <p className="text-[#5A5A5A] text-sm ml-4 pl-3">
+              All the places you've stayed in your RV.
+            </p>
+          </div>
+          <Link to="/addCampground">
+            <button className="flex items-center gap-2 py-2 px-4 rounded-xl bg-[#3B7D3C] text-white font-medium text-sm hover:bg-[#2d6130] shadow-sm hover:shadow-md transition-all duration-200">
+              <FiPlus size={14} /> Add Campground
+            </button>
+          </Link>
         </div>
-      )}
 
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-4">
-        {campgrounds.map(cg => (
-          <div key={cg.id} className="border border-gray-700 rounded-lg overflow-hidden bg-gray-900 hover:border-[#F9B038] transition-colors">
-            {/* Photo Header */}
-            {cg.photos?.length > 0 ? (
-              <img src={cg.photos[0].url} alt={cg.name} className="w-full h-36 object-cover" />
-            ) : (
-              <div className="w-full h-36 bg-gray-800 flex items-center justify-center">
-                <FiMapPin size={32} className="text-gray-600" />
-              </div>
-            )}
+        {/* Empty state */}
+        {campgrounds.length === 0 && (
+          <div className="bg-white border border-[#E8F0E8] rounded-2xl p-16 text-center shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-[#E8F0E8] flex items-center justify-center mx-auto mb-4">
+              <FiMapPin className="text-[#3B7D3C] text-2xl" />
+            </div>
+            <p className="text-[#1A1A1A] font-semibold text-lg mb-1">No campgrounds recorded yet</p>
+            <p className="text-[#5A5A5A] text-sm mb-5">Start logging the campgrounds from your travels.</p>
+            <Link to="/addCampground">
+              <button className="py-2 px-5 rounded-xl bg-[#3B7D3C] text-white font-medium text-sm hover:bg-[#2d6130] transition-all duration-200">
+                Add First Campground
+              </button>
+            </Link>
+          </div>
+        )}
 
-            <div className="p-4 space-y-2">
-              <div className="flex justify-between items-start">
-                <h3 className="text-[#F9B038] font-semibold text-base truncate pr-2">{cg.name}</h3>
-                <button onClick={(e) => toggleFavorite(cg.id, e)} className="shrink-0">
-                  <FiStar size={16} className={cg.isFavorite ? "fill-[#F9B038] text-[#F9B038]" : "text-gray-500"} />
-                </button>
-              </div>
-
-              {cg.location && (
-                <div className="flex items-center gap-1 text-sm text-gray-400">
-                  <FiMapPin size={12} /> <span className="truncate">{cg.location}</span>
+        {/* Grid */}
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
+          {campgrounds.map((cg) => (
+            <div
+              key={cg.id}
+              className="bg-white border border-[#E8F0E8] rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#3B7D3C]/40 transition-all duration-200 cursor-pointer"
+              onClick={() => navigate(`/campgrounds/${cg.id}`)}
+            >
+              {/* Photo */}
+              {cg.photos?.length > 0 ? (
+                <img src={cg.photos[0].url} alt={cg.name} className="w-full h-40 object-cover" />
+              ) : (
+                <div className="w-full h-40 bg-[#F0F4F0] flex items-center justify-center">
+                  <FiMapPin size={32} className="text-[#C8D8C8]" />
                 </div>
               )}
 
-              {(cg.checkIn || cg.checkOut) && (
-                <div className="flex items-center gap-1 text-sm text-gray-400">
-                  <FiCalendar size={12} />
-                  <span>
-                    {formatDate(cg.checkIn)} {cg.checkOut ? `→ ${formatDate(cg.checkOut)}` : ""}
-                    {stayDuration(cg) && <span className="ml-1 text-gray-500">({stayDuration(cg)})</span>}
-                  </span>
+              <div className="p-4 space-y-2">
+                {/* Name + Favorite */}
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className="text-[#1A1A1A] font-semibold text-base truncate flex-1">{cg.name}</h3>
+                  <button
+                    onClick={(e) => handleToggleFavorite(cg.id, e)}
+                    className="flex-shrink-0 p-0.5"
+                    title={cg.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <FiStar
+                      size={16}
+                      className={cg.isFavorite ? "fill-[#D4872D] text-[#D4872D]" : "text-[#C0C0C0]"}
+                    />
+                  </button>
                 </div>
-              )}
 
-              {cg.rating && (
-                <Rate disabled value={cg.rating} className="text-[#F9B038] text-xs" />
-              )}
+                {/* Location */}
+                {cg.location && (
+                  <div className="flex items-center gap-1.5 text-sm text-[#5A5A5A]">
+                    <FiMapPin size={12} className="text-[#3B7D3C] flex-shrink-0" />
+                    <span className="truncate">{cg.location}</span>
+                  </div>
+                )}
 
-              {cg.notes && (
-                <p className="text-gray-500 text-xs italic line-clamp-2">{cg.notes}</p>
-              )}
+                {/* Dates */}
+                {(cg.checkIn || cg.checkOut) && (
+                  <div className="flex items-center gap-1.5 text-sm text-[#5A5A5A]">
+                    <FiCalendar size={12} className="text-[#3B7D3C] flex-shrink-0" />
+                    <span>
+                      {formatDate(cg.checkIn)}
+                      {cg.checkOut ? ` → ${formatDate(cg.checkOut)}` : ""}
+                    </span>
+                  </div>
+                )}
 
-              <div className="flex justify-end gap-2 pt-1 border-t border-gray-700">
-                <button
-                  onClick={() => navigate(`/editCampground/${cg.id}`)}
-                  className="flex items-center gap-1 text-xs text-[#F9B038] border border-[#F9B038] px-2 py-1 rounded hover:bg-[#F9B038] hover:text-black transition-colors"
+                {/* Duration */}
+                {stayDuration(cg) && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#9E9E9E]">
+                    <FiClock size={11} className="flex-shrink-0" />
+                    <span>{stayDuration(cg)}</span>
+                  </div>
+                )}
+
+                {/* Rating */}
+                {cg.rating > 0 && (
+                  <Rate disabled value={cg.rating} className="text-sm" style={{ color: "#D4872D" }} />
+                )}
+
+                {/* Notes */}
+                {cg.notes && (
+                  <p className="text-[#9E9E9E] text-xs line-clamp-2 italic">{cg.notes}</p>
+                )}
+
+                {/* Actions */}
+                <div
+                  className="flex justify-end gap-2 pt-2 border-t border-[#F0F0F0]"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <FiEdit2 size={10} /> Edit
-                </button>
-                <button
-                  onClick={() => setDeleteId(cg.id)}
-                  className="flex items-center gap-1 text-xs text-red-400 border border-red-400 px-2 py-1 rounded hover:bg-red-400 hover:text-white transition-colors"
-                >
-                  <FiTrash2 size={10} /> Delete
-                </button>
+                  <button
+                    onClick={() => navigate(`/editCampground/${cg.id}`)}
+                    className="flex items-center gap-1 text-xs text-[#3B7D3C] border border-[#3B7D3C] px-2.5 py-1 rounded-lg hover:bg-[#3B7D3C] hover:text-white transition-all duration-200"
+                  >
+                    <FiEdit2 size={10} /> Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteId(cg.id)}
+                    className="flex items-center gap-1 text-xs text-red-500 border border-red-300 px-2.5 py-1 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-200"
+                  >
+                    <FiTrash2 size={10} /> Delete
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <Modal
@@ -157,10 +202,10 @@ const CampgroundList = () => {
         title={<span className="text-red-500">Delete Campground</span>}
         okText="Delete"
         okButtonProps={{ danger: true }}
-        onOk={confirmDelete}
+        onOk={handleDelete}
         onCancel={() => setDeleteId(null)}
       >
-        <p>Delete this campground entry and all its photos?</p>
+        <p className="text-[#5A5A5A]">Delete this campground entry and all its photos? This cannot be undone.</p>
       </Modal>
     </div>
   );
